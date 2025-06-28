@@ -1,0 +1,2036 @@
+# CVLeap - Complete Software Development Documentation
+
+## Executive Summary
+
+CVLeap is a comprehensive resume/CV building platform designed to compete with NovoResume by providing advanced features for creating professional resumes. This document outlines the complete technical architecture, features, and implementation strategy.
+
+## 1. Feature Analysis - NovoResume Reverse Engineering
+
+### Core Features Identified:
+
+- **Resume Builder Engine**: Drag-and-drop interface with real-time preview
+- **Template Library**: 16+ professional templates with ATS optimization
+- **AI Assistant**: Content generation for resume sections
+- **Customization Tools**: Fonts, colors, layouts, spacing controls
+- **Multi-format Export**: PDF, Word, plain text downloads
+- **Resume Management**: Save multiple versions, section management
+- **Analytics**: Track resume views and application success
+- **E-learning Platform**: Career development content
+- **Premium Tier**: Advanced features and unlimited downloads
+
+### Technical Architecture Insights:
+
+- Web-based application (no desktop software)
+- Real-time collaborative editing
+- Cloud storage for user data
+- Responsive design for mobile/desktop
+- ATS-friendly template generation
+- Integration with job boards
+
+## 2. CVLeap System Architecture
+
+### 2.1 Technology Stack
+
+#### Frontend
+
+```
+Framework: React 18+ with TypeScript
+State Management: Redux Toolkit + RTK Query
+UI Library: Tailwind CSS + HeadlessUI
+Charts/Analytics: Recharts
+PDF Generation: React-PDF
+Rich Text Editor: TipTap
+Drag & Drop: React Beautiful DnD
+Authentication: Auth0 or Firebase Auth
+```
+
+#### Backend
+
+```
+Runtime: Node.js with Express.js
+Database: PostgreSQL (primary) + Redis (cache)
+ORM: Prisma
+File Storage: AWS S3 or Cloudinary
+Email Service: SendGrid
+Payment Processing: Stripe
+AI Integration: OpenAI GPT-4 API
+Search Engine: Elasticsearch
+```
+
+#### Infrastructure
+
+```
+Hosting: AWS/Vercel/Railway
+CDN: CloudFlare
+Monitoring: Sentry + LogRocket
+CI/CD: GitHub Actions
+Container: Docker
+```
+
+### 2.2 Database Schema
+
+```sql
+-- Users Table
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255),
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    subscription_tier VARCHAR(50) DEFAULT 'free',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Resume Templates
+CREATE TABLE templates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    category VARCHAR(50),
+    is_premium BOOLEAN DEFAULT false,
+    template_data JSONB,
+    preview_image VARCHAR(255),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- User Resumes
+CREATE TABLE resumes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    template_id UUID REFERENCES templates(id),
+    title VARCHAR(200),
+    content JSONB,
+    settings JSONB,
+    is_public BOOLEAN DEFAULT false,
+    view_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Resume Analytics
+CREATE TABLE resume_analytics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    resume_id UUID REFERENCES resumes(id) ON DELETE CASCADE,
+    event_type VARCHAR(50), -- 'view', 'download', 'share'
+    visitor_ip VARCHAR(45),
+    user_agent TEXT,
+    referrer VARCHAR(255),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- AI Generated Content Cache
+CREATE TABLE ai_content_cache (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    content_hash VARCHAR(64) UNIQUE,
+    prompt TEXT,
+    generated_content TEXT,
+    content_type VARCHAR(50),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+## 3. Core Features Implementation
+
+### 3.1 Resume Builder Engine
+
+#### Component Structure
+
+```typescript
+// Resume Builder Main Component
+interface ResumeBuilderProps {
+  resumeId?: string;
+  templateId?: string;
+}
+
+const ResumeBuilder: React.FC<ResumeBuilderProps> = ({
+  resumeId,
+  templateId
+}) => {
+  return (
+    <div className="flex h-screen">
+      <Sidebar />
+      <ResumeEditor />
+      <PreviewPanel />
+    </div>
+  );
+};
+
+// Resume Data Structure
+interface ResumeData {
+  personal: PersonalInfo;
+  experience: WorkExperience[];
+  education: Education[];
+  skills: Skill[];
+  certifications?: Certification[];
+  languages?: Language[];
+  projects?: Project[];
+  customSections?: CustomSection[];
+}
+
+interface PersonalInfo {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  location: string;
+  website?: string;
+  linkedin?: string;
+  summary?: string;
+  profileImage?: string;
+}
+```
+
+#### Real-time Editing Implementation
+
+```typescript
+// Redux slice for resume editing
+const resumeSlice = createSlice({
+  name: 'resume',
+  initialState: {
+    data: {} as ResumeData,
+    template: {} as Template,
+    settings: {} as ResumeSettings,
+    isLoading: false,
+    lastSaved: null
+  },
+  reducers: {
+    updateSection: (state, action) => {
+      const { section, data } = action.payload;
+      state.data[section] = data;
+      state.lastSaved = null; // Mark as unsaved
+    },
+    updateSettings: (state, action) => {
+      state.settings = { ...state.settings, ...action.payload };
+    },
+    saveSuccess: (state) => {
+      state.lastSaved = Date.now();
+    }
+  }
+});
+
+// Auto-save hook
+const useAutoSave = (resumeData: ResumeData, resumeId: string) => {
+  const [saveResume] = useSaveResumeMutation();
+  
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      saveResume({ id: resumeId, data: resumeData });
+    }, 2000);
+    
+    return () => clearTimeout(timeoutId);
+  }, [resumeData, resumeId, saveResume]);
+};
+```
+
+### 3.2 Template System
+
+#### Template Engine
+
+```typescript
+interface Template {
+  id: string;
+  name: string;
+  category: 'modern' | 'classic' | 'creative' | 'minimal';
+  isPremium: boolean;
+  layout: TemplateLayout;
+  styles: TemplateStyles;
+  sections: SectionConfig[];
+}
+
+interface TemplateLayout {
+  columns: 1 | 2;
+  headerType: 'centered' | 'left' | 'split';
+  sidebarWidth?: number;
+  spacing: 'compact' | 'normal' | 'relaxed';
+}
+
+interface TemplateStyles {
+  primaryColor: string;
+  secondaryColor: string;
+  fontFamily: string;
+  fontSize: {
+    name: number;
+    title: number;
+    heading: number;
+    body: number;
+  };
+  lineHeight: number;
+  margins: {
+    page: number;
+    section: number;
+  };
+}
+
+// Template Renderer Component
+const TemplateRenderer: React.FC<{
+  template: Template;
+  data: ResumeData;
+  settings: ResumeSettings;
+}> = ({ template, data, settings }) => {
+  const styles = useMemo(() => 
+    generateTemplateStyles(template, settings), 
+    [template, settings]
+  );
+  
+  return (
+    <div className="resume-preview" style={styles}>
+      {template.sections.map(section => (
+        <SectionRenderer
+          key={section.id}
+          config={section}
+          data={data[section.dataKey]}
+          styles={styles}
+        />
+      ))}
+    </div>
+  );
+};
+```
+
+### 3.3 AI Assistant Integration
+
+#### AI Content Generation Service
+
+```typescript
+class AIAssistantService {
+  private openai: OpenAI;
+  
+  constructor() {
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+  }
+  
+  async generateResumeSection(
+    sectionType: 'summary' | 'experience' | 'skills',
+    context: any,
+    userInstructions?: string
+  ): Promise<string> {
+    const prompt = this.buildPrompt(sectionType, context, userInstructions);
+    
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a professional resume writer with expertise in creating ATS-optimized content.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.7
+      });
+      
+      return response.choices[0].message.content || '';
+    } catch (error) {
+      throw new Error('AI content generation failed');
+    }
+  }
+  
+  private buildPrompt(
+    sectionType: string,
+    context: any,
+    instructions?: string
+  ): string {
+    const basePrompts = {
+      summary: `Write a professional summary for a ${context.jobTitle} with ${context.yearsExperience} years of experience. Key skills: ${context.skills?.join(', ')}`,
+      experience: `Write bullet points for a ${context.position} role at ${context.company}. Focus on achievements and quantifiable results.`,
+      skills: `Suggest relevant skills for a ${context.jobTitle} position in ${context.industry}.`
+    };
+    
+    let prompt = basePrompts[sectionType] || '';
+    if (instructions) {
+      prompt += `\n\nAdditional instructions: ${instructions}`;
+    }
+    
+    return prompt;
+  }
+}
+```
+
+### 3.4 Export System
+
+#### PDF Generation
+
+```typescript
+import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
+
+const ResumePDF: React.FC<{ data: ResumeData; template: Template }> = ({ 
+  data, 
+  template 
+}) => {
+  const styles = StyleSheet.create({
+    page: {
+      fontFamily: template.styles.fontFamily,
+      fontSize: template.styles.fontSize.body,
+      padding: template.styles.margins.page,
+      backgroundColor: '#ffffff'
+    },
+    header: {
+      marginBottom: 20,
+      textAlign: 'center'
+    },
+    name: {
+      fontSize: template.styles.fontSize.name,
+      fontWeight: 'bold',
+      marginBottom: 5
+    },
+    contact: {
+      fontSize: template.styles.fontSize.body,
+      marginBottom: 2
+    },
+    section: {
+      marginBottom: template.styles.margins.section
+    },
+    sectionTitle: {
+      fontSize: template.styles.fontSize.heading,
+      fontWeight: 'bold',
+      marginBottom: 8,
+      color: template.styles.primaryColor,
+      borderBottom: `1px solid ${template.styles.primaryColor}`
+    }
+  });
+  
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        {/* Header Section */}
+        <View style={styles.header}>
+          <Text style={styles.name}>
+            {data.personal.firstName} {data.personal.lastName}
+          </Text>
+          <Text style={styles.contact}>{data.personal.email}</Text>
+          <Text style={styles.contact}>{data.personal.phone}</Text>
+          {data.personal.location && (
+            <Text style={styles.contact}>{data.personal.location}</Text>
+          )}
+        </View>
+        
+        {/* Summary Section */}
+        {data.personal.summary && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Professional Summary</Text>
+            <Text>{data.personal.summary}</Text>
+          </View>
+        )}
+        
+        {/* Experience Section */}
+        {data.experience.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Work Experience</Text>
+            {data.experience.map((exp, index) => (
+              <ExperienceItem key={index} experience={exp} styles={styles} />
+            ))}
+          </View>
+        )}
+        
+        {/* Additional sections... */}
+      </Page>
+    </Document>
+  );
+};
+
+// Export hook
+const useResumeExport = () => {
+  const exportToPDF = useCallback(async (
+    resumeData: ResumeData,
+    template: Template,
+    filename: string
+  ) => {
+    const blob = await pdf(<ResumePDF data={resumeData} template={template} />).toBlob();
+    saveAs(blob, `${filename}.pdf`);
+  }, []);
+  
+  const exportToWord = useCallback(async (
+    resumeData: ResumeData,
+    template: Template,
+    filename: string
+  ) => {
+    // Implementation for Word export using docx library
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `${resumeData.personal.firstName} ${resumeData.personal.lastName}`,
+                bold: true,
+                size: 28
+              })
+            ]
+          })
+          // Add more content...
+        ]
+      }]
+    });
+    
+    const buffer = await Packer.toBuffer(doc);
+    saveAs(new Blob([buffer]), `${filename}.docx`);
+  }, []);
+  
+  return { exportToPDF, exportToWord };
+};
+```
+
+## 4. Advanced Features
+
+### 4.1 Resume Analytics Dashboard
+
+```typescript
+interface AnalyticsData {
+  totalViews: number;
+  uniqueViews: number;
+  downloadCount: number;
+  shareCount: number;
+  viewsByDate: { date: string; views: number }[];
+  topReferrers: { source: string; count: number }[];
+  deviceBreakdown: { device: string; percentage: number }[];
+}
+
+const AnalyticsDashboard: React.FC<{ resumeId: string }> = ({ resumeId }) => {
+  const { data: analytics, isLoading } = useGetResumeAnalyticsQuery(resumeId);
+  
+  if (isLoading) return <LoadingSpinner />;
+  
+  return (
+    <div className="analytics-dashboard p-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <MetricCard
+          title="Total Views"
+          value={analytics.totalViews}
+          icon="eye"
+          trend={+12}
+        />
+        <MetricCard
+          title="Unique Views"
+          value={analytics.uniqueViews}
+          icon="users"
+          trend={+8}
+        />
+        <MetricCard
+          title="Downloads"
+          value={analytics.downloadCount}
+          icon="download"
+          trend={+15}
+        />
+        <MetricCard
+          title="Shares"
+          value={analytics.shareCount}
+          icon="share"
+          trend={+5}
+        />
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Views Over Time</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LineChart
+              width={400}
+              height={300}
+              data={analytics.viewsByDate}
+            >
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="views" stroke="#8884d8" />
+            </LineChart>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Traffic Sources</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PieChart width={400} height={300}>
+              <Pie
+                data={analytics.topReferrers}
+                cx={200}
+                cy={150}
+                labelLine={false}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="count"
+              />
+              <Tooltip />
+            </PieChart>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+```
+
+### 4.2 Collaboration Features
+
+```typescript
+// Real-time collaboration using WebSocket
+class CollaborationService {
+  private socket: Socket;
+  private resumeId: string;
+  
+  constructor(resumeId: string) {
+    this.resumeId = resumeId;
+    this.socket = io(process.env.NEXT_PUBLIC_WS_URL);
+    this.setupEventListeners();
+  }
+  
+  private setupEventListeners() {
+    this.socket.on('resume-update', (update: ResumeUpdate) => {
+      // Handle incoming updates from other collaborators
+      store.dispatch(applyRemoteUpdate(update));
+    });
+    
+    this.socket.on('collaborator-joined', (user: User) => {
+      store.dispatch(addCollaborator(user));
+    });
+    
+    this.socket.on('collaborator-left', (userId: string) => {
+      store.dispatch(removeCollaborator(userId));
+    });
+  }
+  
+  public broadcastUpdate(update: ResumeUpdate) {
+    this.socket.emit('resume-update', {
+      resumeId: this.resumeId,
+      update,
+      timestamp: Date.now()
+    });
+  }
+  
+  public joinResume() {
+    this.socket.emit('join-resume', this.resumeId);
+  }
+  
+  public leaveResume() {
+    this.socket.emit('leave-resume', this.resumeId);
+  }
+}
+
+// Conflict resolution for simultaneous edits
+const resolveConflicts = (
+  localChanges: ResumeUpdate[],
+  remoteChanges: ResumeUpdate[]
+): ResumeUpdate[] => {
+  // Implement operational transformation or similar conflict resolution
+  return [...localChanges, ...remoteChanges].sort((a, b) => a.timestamp - b.timestamp);
+};
+```
+
+## 5. API Documentation
+
+### 5.1 Authentication Endpoints
+
+```typescript
+// POST /api/auth/register
+interface RegisterRequest {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface RegisterResponse {
+  user: User;
+  token: string;
+  refreshToken: string;
+}
+
+// POST /api/auth/login
+interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+interface LoginResponse {
+  user: User;
+  token: string;
+  refreshToken: string;
+}
+
+// POST /api/auth/refresh
+interface RefreshRequest {
+  refreshToken: string;
+}
+
+interface RefreshResponse {
+  token: string;
+  refreshToken: string;
+}
+```
+
+### 5.2 Resume Management Endpoints
+
+```typescript
+// GET /api/resumes
+interface GetResumesResponse {
+  resumes: Resume[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+// POST /api/resumes
+interface CreateResumeRequest {
+  templateId: string;
+  title: string;
+  data?: Partial<ResumeData>;
+}
+
+interface CreateResumeResponse {
+  resume: Resume;
+}
+
+// PUT /api/resumes/:id
+interface UpdateResumeRequest {
+  title?: string;
+  data?: Partial<ResumeData>;
+  settings?: Partial<ResumeSettings>;
+}
+
+interface UpdateResumeResponse {
+  resume: Resume;
+}
+
+// DELETE /api/resumes/:id
+interface DeleteResumeResponse {
+  success: boolean;
+}
+
+// POST /api/resumes/:id/duplicate
+interface DuplicateResumeResponse {
+  resume: Resume;
+}
+
+// GET /api/resumes/:id/analytics
+interface GetAnalyticsResponse {
+  analytics: AnalyticsData;
+}
+```
+
+### 5.3 AI Assistant Endpoints
+
+```typescript
+// POST /api/ai/generate-content
+interface GenerateContentRequest {
+  sectionType: 'summary' | 'experience' | 'skills' | 'achievement';
+  context: any;
+  instructions?: string;
+  resumeData?: Partial<ResumeData>;
+}
+
+interface GenerateContentResponse {
+  content: string;
+  suggestions?: string[];
+}
+
+// POST /api/ai/improve-content
+interface ImproveContentRequest {
+  content: string;
+  sectionType: string;
+  targetRole?: string;
+  improvementType: 'clarity' | 'impact' | 'keywords' | 'length';
+}
+
+interface ImproveContentResponse {
+  improvedContent: string;
+  changes: ContentChange[];
+}
+
+// POST /api/ai/job-match-score
+interface JobMatchRequest {
+  resumeId: string;
+  jobDescription: string;
+}
+
+interface JobMatchResponse {
+  score: number;
+  strengths: string[];
+  improvements: string[];
+  missingKeywords: string[];
+}
+```
+
+## 6. Mobile Application Specifications
+
+### 6.1 React Native Architecture
+
+```typescript
+// App.tsx - Main Navigation
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+
+const Stack = createStackNavigator();
+
+const App: React.FC = () => {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Screen name="Auth" component={AuthScreen} />
+        <Stack.Screen name="Dashboard" component={DashboardScreen} />
+        <Stack.Screen name="ResumeList" component={ResumeListScreen} />
+        <Stack.Screen name="ResumeBuilder" component={ResumeBuilderScreen} />
+        <Stack.Screen name="Preview" component={PreviewScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
+
+// Mobile Resume Builder Component
+const MobileResumeBuilder: React.FC<{ resumeId: string }> = ({ resumeId }) => {
+  const [activeSection, setActiveSection] = useState('personal');
+  const { data: resume, isLoading } = useGetResumeQuery(resumeId);
+  
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="arrow-back" size={24} />
+        </TouchableOpacity>
+        <Text style={styles.title}>Edit Resume</Text>
+        <TouchableOpacity onPress={handleSave}>
+          <Text style={styles.saveButton}>Save</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <SectionTabs
+          sections={RESUME_SECTIONS}
+          activeSection={activeSection}
+          onSectionChange={setActiveSection}
+        />
+      </ScrollView>
+      
+      <KeyboardAvoidingView style={styles.content}>
+        <SectionEditor
+          section={activeSection}
+          data={resume?.data[activeSection]}
+          onUpdate={handleSectionUpdate}
+        />
+      </KeyboardAvoidingView>
+      
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.previewButton}
+          onPress={() => navigation.navigate('Preview', { resumeId })}
+        >
+          <Text style={styles.previewButtonText}>Preview</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+};
+```
+
+### 6.2 Offline Functionality
+
+```typescript
+// Offline storage using AsyncStorage and Redux Persist
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persistStore, persistReducer } from 'redux-persist';
+
+const persistConfig = {
+  key: 'root',
+  storage: AsyncStorage,
+  whitelist: ['resume', 'templates', 'user']
+};
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
+// Sync service for offline changes
+class OfflineSyncService {
+  private pendingChanges: ResumeUpdate[] = [];
+  
+  async addPendingChange(change: ResumeUpdate) {
+    this.pendingChanges.push(change);
+    await AsyncStorage.setItem(
+      'pendingChanges', 
+      JSON.stringify(this.pendingChanges)
+    );
+  }
+  
+  async syncWhenOnline() {
+    if (this.pendingChanges.length === 0) return;
+    
+    try {
+      for (const change of this.pendingChanges) {
+        await api.updateResume(change.resumeId, change.data);
+      }
+      
+      this.pendingChanges = [];
+      await AsyncStorage.removeItem('pendingChanges');
+    } catch (error) {
+      console.error('Sync failed:', error);
+    }
+  }
+}
+```
+
+## 7. Testing Strategy
+
+### 7.1 Unit Testing
+
+```typescript
+// Resume Builder Component Tests
+describe('ResumeBuilder', () => {
+  test('renders correctly with initial data', () => {
+    const mockResume = createMockResume();
+    render(<ResumeBuilder resumeId={mockResume.id} />);
+    
+    expect(screen.getByText(mockResume.title)).toBeInTheDocument();
+    expect(screen.getByText('Personal Information')).toBeInTheDocument();
+  });
+  
+  test('updates resume data on section change', async () => {
+    const mockUpdateResume = jest.fn();
+    const { user } = setup(<ResumeBuilder resumeId="test-id" />);
+    
+    const nameInput = screen.getByLabelText('First Name');
+    await user.type(nameInput, 'John');
+    
+    await waitFor(() => {
+      expect(mockUpdateResume).toHaveBeenCalledWith({
+        id: 'test-id',
+        data: expect.objectContaining({
+          personal: expect.objectContaining({ firstName: 'John' })
+        })
+      });
+    });
+  });
+});
+
+// AI Service Tests
+describe('AIAssistantService', () => {
+  test('generates professional summary correctly', async () => {
+    const mockOpenAI = {
+      chat: {
+        completions: {
+          create: jest.fn().mockResolvedValue({
+            choices: [{ message: { content: 'Generated summary' } }]
+          })
+        }
+      }
+    };
+    
+    const service = new AIAssistantService();
+    service['openai'] = mockOpenAI as any;
+    
+    const result = await service.generateResumeSection(
+      'summary',
+      { jobTitle: 'Software Engineer', yearsExperience: 5 }
+    );
+    
+    expect(result).toBe('Generated summary');
+    expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: 'gpt-4',
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            role: 'user',
+            content: expect.stringContaining('Software Engineer')
+          })
+        ])
+      })
+    );
+  });
+});
+```
+
+### 7.2 Integration Testing
+
+```typescript
+// API Integration Tests
+describe('Resume API Integration', () => {
+  test('creates and retrieves resume successfully', async () => {
+    const createData = {
+      templateId: 'template-1',
+      title: 'Test Resume',
+      data: createMockResumeData()
+    };
+    
+    // Create resume
+    const createResponse = await request(app)
+      .post('/api/resumes')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(createData)
+      .expect(201);
+    
+    const resumeId = createResponse.body.resume.id;
+    
+    // Retrieve resume
+    const getResponse = await request(app)
+      .get(`/api/resumes/${resumeId}`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+    
+    expect(getResponse.body.resume.title).toBe(createData.title);
+    expect(getResponse.body.resume.data).toEqual(createData.data);
+  });
+  
+  test('generates PDF export correctly', async () => {
+    const resumeId = await createTestResume();
+    
+    const response = await request(app)
+      .get(`/api/resumes/${resumeId}/export/pdf`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+    
+    expect(response.headers['content-type']).toBe('application/pdf');
+    expect(response.body.length).toBeGreaterThan(0);
+  });
+});
+```
+
+### 7.3 E2E Testing with Playwright
+
+```typescript
+// E2E Tests
+import { test, expect } from '@playwright/test';
+
+test.describe('Resume Creation Flow', () => {
+  test('user can create a complete resume', async ({ page }) => {
+    // Login
+    await page.goto('/login');
+    await page.fill('[data-testid=email]', 'test@example.com');
+    await page.fill('[data-testid=password]', 'password123');
+    await page.click('[data-testid=login-button]');
+    
+    // Navigate to resume builder
+    await page.click('[data-testid=create-resume]');
+    await page.click('[data-testid=template-modern]');
+    
+    // Fill personal information
+    await page.fill('[data-testid=first-name]', 'John');
+    await page.fill('[data-testid=last-name]', 'Doe');
+    await page.fill('[data-testid=email]', 'john.doe@email.com');
+    
+    // Add work experience
+    await page.click('[data-testid=add-experience]');
+    await page.fill('[data-testid=company]', 'Tech Corp');
+    await page.fill('[data-testid=position]', 'Software Engineer');
+    await page.fill('[data-testid=description]', 'Developed amazing software');
+    
+    // Preview and download
+    await page.click('[data-testid=preview-button]');
+    await expect(page.getByText('John Doe')).toBeVisible();
+    await expect(page.getByText('Tech Corp')).toBeVisible();
+    
+    // Download PDF
+    const downloadPromise = page.waitForEvent('download');
+    await page.click('[data-testid=download-pdf]');
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toContain('.pdf');
+  });
+});
+```
+
+## 8. Deployment & DevOps
+
+### 8.1 Docker Configuration
+
+```dockerfile
+# Frontend Dockerfile
+FROM node:18-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+RUN \
+  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+ENV NEXT_TELEMETRY_DISABLED 1
+
+RUN yarn build
+
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT 3000
+
+CMD ["node", "server.js"]
+
+# Backend Dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy source code
+COPY . .
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S backend -u 1001
+
+# Change ownership
+RUN chown -R backend:nodejs /app
+USER backend
+
+EXPOSE 8000
+
+CMD ["npm", "start"]
+
+# Database Dockerfile
+FROM postgres:15-alpine
+
+ENV POSTGRES_DB=cvleap
+ENV POSTGRES_USER=cvleap_user
+ENV POSTGRES_PASSWORD=secure_password
+
+# Copy initialization scripts
+COPY ./database/init.sql /docker-entrypoint-initdb.d/
+
+EXPOSE 5432
+```
+
+### 8.2 Docker Compose Configuration
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_WS_URL=ws://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - cvleap-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://cvleap_user:secure_password@database:5432/cvleap
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+    depends_on:
+      - database
+      - redis
+    networks:
+      - cvleap-network
+
+  database:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=cvleap
+      - POSTGRES_USER=cvleap_user
+      - POSTGRES_PASSWORD=secure_password
+    networks:
+      - cvleap-network
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - cvleap-network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - cvleap-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  cvleap-network:
+    driver: bridge
+```
+
+### 8.3 Kubernetes Deployment
+
+```yaml
+# k8s/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cvleap
+
+---
+# k8s/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cvleap-config
+  namespace: cvleap
+data:
+  DATABASE_URL: "postgresql://cvleap_user:secure_password@postgres-service:5432/cvleap"
+  REDIS_URL: "redis://redis-service:6379"
+  NODE_ENV: "production"
+
+---
+# k8s/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cvleap-secrets
+  namespace: cvleap
+type: Opaque
+data:
+  JWT_SECRET: <base64-encoded-secret>
+  OPENAI_API_KEY: <base64-encoded-key>
+  AWS_ACCESS_KEY_ID: <base64-encoded-key>
+  AWS_SECRET_ACCESS_KEY: <base64-encoded-secret>
+  STRIPE_SECRET_KEY: <base64-encoded-key>
+
+---
+# k8s/frontend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: cvleap
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: cvleap/frontend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NEXT_PUBLIC_API_URL
+          value: "https://api.cvleap.com"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+---
+# k8s/backend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: cvleap
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: cvleap/backend:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: cvleap-config
+        - secretRef:
+            name: cvleap-secrets
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+# k8s/postgres-deployment.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-statefulset
+  namespace: cvleap
+spec:
+  serviceName: postgres-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "cvleap"
+        - name: POSTGRES_USER
+          value: "cvleap_user"
+        - name: POSTGRES_PASSWORD
+          value: "secure_password"
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+
+---
+# k8s/services.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: cvleap
+spec:
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: cvleap
+spec:
+  selector:
+    app: backend
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: cvleap
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP
+
+---
+# k8s/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cvleap-ingress
+  namespace: cvleap
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - cvleap.com
+    - api.cvleap.com
+    secretName: cvleap-tls
+  rules:
+  - host: cvleap.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80
+  - host: api.cvleap.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 80
+```
+
+### 8.4 CI/CD Pipeline (GitHub Actions)
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy CVLeap
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        cd frontend && npm ci
+        cd ../backend && npm ci
+    
+    - name: Run frontend tests
+      run: cd frontend && npm run test:ci
+    
+    - name: Run backend tests
+      run: cd backend && npm run test:ci
+    
+    - name: Run E2E tests
+      run: |
+        npm run test:e2e
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+    
+    - name: Build and push Frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Build and push Backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+    
+    - name: Deploy to EKS
+      run: |
+        aws eks update-kubeconfig --region us-west-2 --name cvleap-cluster
+        kubectl set image deployment/frontend-deployment frontend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:latest -n cvleap
+        kubectl set image deployment/backend-deployment backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:latest -n cvleap
+        kubectl rollout status deployment/frontend-deployment -n cvleap
+        kubectl rollout status deployment/backend-deployment -n cvleap
+    
+    - name: Run database migrations
+      run: |
+        kubectl exec -n cvleap deployment/backend-deployment -- npm run migrate:deploy
+    
+    - name: Notify deployment status
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+```
+
+## 9. Performance Optimization
+
+### 9.1 Frontend Optimization
+
+```typescript
+// Code splitting and lazy loading
+const ResumeBuilder = lazy(() => import('./components/ResumeBuilder'));
+const TemplateGallery = lazy(() => import('./components/TemplateGallery'));
+const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'));
+
+// Image optimization
+const OptimizedImage: React.FC<{
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+}> = ({ src, alt, width, height }) => {
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      loading="lazy"
+      placeholder="blur"
+      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkbHB0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyetBep0cZoiVhGpP8AhIP8=..."
+      sizes="(max-width: 768px) 100vw, 50vw"
+    />
+  );
+};
+
+// Service Worker for caching
+// public/sw.js
+const CACHE_NAME = 'cvleap-v1';
+const urlsToCache = [
+  '/',
+  '/static/js/bundle.js',
+  '/static/css/main.css',
+  '/api/templates'
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        return cache.addAll(urlsToCache);
+      })
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        if (response) {
+          return response;
+        }
+        return fetch(event.request);
+      })
+  );
+});
+
+// Virtual scrolling for large lists
+const VirtualizedResumeList: React.FC<{ resumes: Resume[] }> = ({ resumes }) => {
+  const parentRef = useRef<HTMLDivElement>(null);
+  
+  const rowVirtualizer = useVirtualizer({
+    count: resumes.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 120,
+    overscan: 5
+  });
+  
+  return (
+    <div ref={parentRef} className="h-96 overflow-auto">
+      <div
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative'
+        }}
+      >
+        {rowVirtualizer.getVirtualItems().map((virtualItem) => (
+          <div
+            key={virtualItem.index}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: `${virtualItem.size}px`,
+              transform: `translateY(${virtualItem.start}px)`
+            }}
+          >
+            <ResumeCard resume={resumes[virtualItem.index]} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+```
+
+### 9.2 Backend Optimization
+
+```typescript
+// Database query optimization
+class ResumeRepository {
+  async findUserResumes(
+    userId: string,
+    options: {
+      page: number;
+      limit: number;
+      search?: string;
+      sortBy?: 'created_at' | 'updated_at' | 'title';
+      sortOrder?: 'asc' | 'desc';
+    }
+  ): Promise<{ resumes: Resume[]; total: number }> {
+    const { page, limit, search, sortBy = 'updated_at', sortOrder = 'desc' } = options;
+    const offset = (page - 1) * limit;
+    
+    let query = this.db
+      .select({
+        id: resumes.id,
+        title: resumes.title,
+        updatedAt: resumes.updatedAt,
+        createdAt: resumes.createdAt,
+        templateName: templates.name,
+        viewCount: resumes.viewCount
+      })
+      .from(resumes)
+      .leftJoin(templates, eq(resumes.templateId, templates.id))
+      .where(eq(resumes.userId, userId));
+    
+    if (search) {
+      query = query.where(
+        or(
+          ilike(resumes.title, `%${search}%`),
+          ilike(templates.name, `%${search}%`)
+        )
+      );
+    }
+    
+    // Get total count for pagination
+    const totalQuery = this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(resumes)
+      .where(eq(resumes.userId, userId));
+    
+    if (search) {
+      totalQuery.leftJoin(templates, eq(resumes.templateId, templates.id))
+        .where(
+          and(
+            eq(resumes.userId, userId),
+            or(
+              ilike(resumes.title, `%${search}%`),
+              ilike(templates.name, `%${search}%`)
+            )
+          )
+        );
+    }
+    
+    const [resumeResults, totalResults] = await Promise.all([
+      query
+        .orderBy(sortOrder === 'desc' ? desc(resumes[sortBy]) : asc(resumes[sortBy]))
+        .limit(limit)
+        .offset(offset),
+      totalQuery
+    ]);
+    
+    return {
+      resumes: resumeResults,
+      total: totalResults[0].count
+    };
+  }
+  
+  // Bulk operations for better performance
+  async bulkUpdateResumeViews(updates: { resumeId: string; views: number }[]) {
+    const cases = updates.map(update => 
+      sql`WHEN ${resumes.id} = ${update.resumeId} THEN ${update.views}`
+    ).join(' ');
+    
+    const resumeIds = updates.map(update => update.resumeId);
+    
+    await this.db
+      .update(resumes)
+      .set({
+        viewCount: sql`CASE ${cases} END`,
+        updatedAt: new Date()
+      })
+      .where(inArray(resumes.id, resumeIds));
+  }
+}
+
+// Redis caching layer
+class CacheService {
+  private redis: Redis;
+  
+  constructor() {
+    this.redis = new Redis(process.env.REDIS_URL);
+  }
+  
+  async get<T>(key: string): Promise<T | null> {
+    try {
+      const cached = await this.redis.get(key);
+      return cached ? JSON.parse(cached) : null;
+    } catch (error) {
+      console.error('Cache get error:', error);
+      return null;
+    }
+  }
+  
+  async set(key: string, value: any, ttl: number = 3600): Promise<void> {
+    try {
+      await this.redis.setex(key, ttl, JSON.stringify(value));
+    } catch (error) {
+      console.error('Cache set error:', error);
+    }
+  }
+  
+  async invalidate(pattern: string): Promise<void> {
+    try {
+      const keys = await this.redis.keys(pattern);
+      if (keys.length > 0) {
+        await this.redis.del(...keys);
+      }
+    } catch (error) {
+      console.error('Cache invalidate error:', error);
+    }
+  }
+  
+  // Cache wrapper for expensive operations
+  async cacheWrap<T>(
+    key: string,
+    ttl: number,
+    fn: () => Promise<T>
+  ): Promise<T> {
+    const cached = await this.get<T>(key);
+    if (cached !== null) {
+      return cached;
+    }
+    
+    const result = await fn();
+    await this.set(key, result, ttl);
+    return result;
+  }
+}
+
+// Request rate limiting
+const createRateLimiter = (
+  windowMs: number,
+  maxRequests: number,
+  keyGenerator?: (req: Request) => string
+) => {
+  return rateLimit({
+    windowMs,
+    max: maxRequests,
+    keyGenerator: keyGenerator || ((req) => req.ip),
+    handler: (req, res) => {
+      res.status(429).json({
+        error: 'Too many requests',
+        retryAfter: Math.ceil(windowMs / 1000)
+      });
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+  });
+};
+
+// API endpoint rate limits
+app.use('/api/auth', createRateLimiter(15 * 60 * 1000, 5)); // 5 attempts per 15 minutes
+app.use('/api/resumes', createRateLimiter(60 * 1000, 100)); // 100 requests per minute
+app.use('/api/ai', createRateLimiter(60 * 1000, 10)); // 10 AI requests per minute
+```
+
+## 10. Security Implementation
+
+### 10.1 Authentication & Authorization
+
+```typescript
+// JWT Token Management
+interface TokenPayload {
+  userId: string;
+  email: string;
+  subscriptionTier: string;
+  iat: number;
+  exp: number;
+}
+
+class AuthService {
+  private jwtSecret: string;
+  private refreshSecret: string;
+  
+  constructor() {
+    this.jwtSecret = process.env.JWT_SECRET!;
+    this.refreshSecret = process.env.JWT_REFRESH_SECRET!;
+  }
+  
+  generateTokens(user: User): { accessToken: string; refreshToken: string } {
+    const payload: Omit<TokenPayload, 'iat' | 'exp'> = {
+      userId: user.id,
+      email: user.email,
+      subscriptionTier: user.subscriptionTier
+    };
+    
+    const accessToken = jwt.sign(payload, this.jwtSecret, {
+      expiresIn: '15m',
+      issuer: 'cvleap.com',
+      audience: 'cvleap-users'
+    });
+    
+    const refreshToken = jwt.sign(
+      { userId: user.id },
+      this.refreshSecret,
+      { expiresIn: '7d' }
+    );
+    
+    return { accessToken, refreshToken };
+  }
+  
+  verifyToken(token: string): TokenPayload {
+    try {
+      return jwt.verify(token, this.jwtSecret, {
+        issuer: 'cvleap.com',
+        audience: 'cvleap-users'
+      }) as TokenPayload;
+    } catch (error) {
+      throw new UnauthorizedError('Invalid or expired token');
+    }
+  }
+  
+  async refreshAccessToken(refreshToken: string): Promise<string> {
+    try {
+      const payload = jwt.verify(refreshToken, this.refreshSecret) as { userId: string };
+      const user = await userRepository.findById(payload.userId);
+      
+      if (!user) {
+        throw new UnauthorizedError('User not found');
+      }
+      
+      const { accessToken } = this.generateTokens(user);
+      return accessToken;
+    } catch (error) {
+      throw new UnauthorizedError('Invalid refresh token');
+    }
+  }
+}
+
+// Role-based access control middleware
+const requirePermission = (permission: string) => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const userPermissions = await getUserPermissions(req.user.userId);
+      
+      if (!userPermissions.includes(permission)) {
+        return res.status(403).json({ error: 'Insufficient permissions' });
+      }
+      
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+// Premium feature access control
+const requirePremium = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  if (req.user.subscriptionTier === 'free') {
+    return res.status(403).json({
+      error: 'Premium subscription required',
+      upgradeUrl: '/pricing'
+    });
+  }
+  next();
+};
+```
+
+### 10.2 Data Validation & Sanitization
+
+```typescript
+// Input validation schemas
+const resumeDataSchema = z.object({
+  personal: z.object({
+    firstName: z.string().min(1).max(50).trim(),
+    lastName: z.string().min(1).max(50).trim(),
+    email: z.string().email().max(100),
+    phone: z.string().regex(/^[\+]?[1-9][\d]{0,15}$/).optional(),
+    location: z.string().max(100).optional(),
+    website: z.string().url().optional(),
+    linkedin: z.string().url().optional(),
+    summary: z.string().max(1000).optional(),
+    profileImage: z.string().url().optional()
+  }),
+  experience: z.array(z.object({
+    company: z.string().min(1).max(100).trim(),
+    position: z.string().min(1).max(100).trim(),
+    startDate: z.string().regex(/^\d{4}-\d{2}$/),
+    endDate: z.string().regex(/^\d{4}-\d{2}$/).nullable(),
+    description: z.string().max(2000).optional(),
+    location: z.string().max(100).optional(),
+    isCurrentRole: z.boolean().default(false)
+  })).max(20),
+  education: z.array(z.object({
+    institution: z.string().min(1).max(100).trim(),
+    degree: z.string().min(1).max(100).trim(),
+    fieldOfStudy: z.string().max(100).optional(),
+    startDate: z.string().regex(/^\d{4}$/),
+    endDate: z.string().regex(/^\d{4}$/).nullable(),
+    gpa: z.number().min(0).max(4).optional(),
+    location: z.string().max(100).optional()
+  })).max(10),
+  skills: z.array(z.object({
+    name: z.string().min(1).max(50).trim(),
+    level: z.enum(['beginner', 'intermediate', 'advanced', 'expert']).optional(),
+    category: z.string().max(50).optional()
+  })).max(50)
+});
+
+// Sanitization utilities
+const sanitizeHtml = (html: string): string => {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'u', 'br', 'p'],
+    ALLOWED_ATTR: []
+  });
+};
+
+const sanitizeInput = (input: string): string => {
+  return input
+    .trim()
+    .replace(/[<>]/g, '') // Remove potential HTML tags
+    .substring(0, 1000); // Limit length
+};
+
+// Validation middleware
+const validateResumeData = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = resumeDataSchema.parse(req.body.data);
+    
+    // Additional sanitization
+    validatedData.personal.summary = validatedData.personal.summary 
+      ? sanitizeHtml(validatedData.personal.summary)
+      : undefined;
+    
+    validatedData.experience = validatedData.experience.map(exp => ({
+      ...exp,
+      description: exp.description ? sanitizeHtml(exp.description) : undefined
+    }));
+    
+    req.body.data = validatedData;
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error:
+```
