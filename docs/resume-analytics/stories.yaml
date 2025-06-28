@@ -1,0 +1,56 @@
+epic:
+  name: Resume Performance Analytics
+  description: Provide users with comprehensive insights into how their shared resumes are being viewed and interacted with. This includes tracking key events like views, downloads, and shares, and presenting this data through an intuitive dashboard featuring metrics and visualizations. The goal is to empower users to understand the effectiveness of their resumes and make data-driven decisions in their job search.
+  prd_references:
+    - "Section 1.1: Core Features Identified (Analytics)"
+    - "Section 2.2: Database Schema (resume_analytics table)"
+    - "Section 4.1: Resume Analytics Dashboard (UI components and metrics)"
+    - "Section 5.2: Resume Management Endpoints (GET /api/resumes/:id/analytics)"
+
+user_stories:
+  - id: US001
+    title: Track Resume Interaction Events
+    role: System
+    desire: To automatically and accurately record view, download, and share events for publicly accessible resumes
+    benefit: Users can get insights into how their resumes are being interacted with.
+    status: needs-requirements # Default status, will be updated by other agents
+    acceptance_criteria:
+      - AC1: When a public resume URL is accessed (e.g., a direct visit or embed view), a 'view' event MUST be recorded in the `resume_analytics` table. The record MUST include `resume_id`, `event_type='view'`, `visitor_ip` (or an anonymized/hashed version), `user_agent`, and `created_at` timestamp.
+      - AC2: When a resume is downloaded using the platform's designated download button/feature, a 'download' event MUST be recorded in the `resume_analytics` table. The record MUST include `resume_id`, `event_type='download'`, and `created_at`.
+      - AC3: When a resume is shared using the platform's designated share button/feature (if applicable, e.g., sharing via a unique link or social media integration), a 'share' event MUST be recorded in the `resume_analytics` table. The record MUST include `resume_id`, `event_type='share'`, and `created_at`.
+      - AC4: The recording of analytics events SHOULD NOT introduce a user-perceptible delay in resume loading or interaction (e.g., event tracking should be asynchronous or use non-blocking methods).
+      - AC5: IP addresses, if stored, MUST be handled in accordance with stated privacy policies and relevant regulations (e.g., GDPR). Consideration should be given to anonymization or hashing if full IP storage is not strictly necessary for unique view calculations.
+      - AC6: The system SHOULD attempt to filter out known bot/crawler traffic from being recorded as legitimate 'view' events to ensure data accuracy.
+
+  - id: US002
+    title: Provide Aggregated Analytics Data via API
+    role: Backend System
+    desire: To process raw analytics events and expose an API endpoint that provides aggregated statistics for a specific resume
+    benefit: The frontend can display these statistics on a dashboard.
+    status: needs-api # This story will require backend architecture
+    acceptance_criteria:
+      - AC1: An API endpoint `GET /api/resumes/:id/analytics` MUST be available, as specified in PRD section 5.2.
+      - AC2: The API response for a valid `resume_id` MUST be a JSON object containing `totalViews` (integer), `uniqueViews` (integer), `downloadCount` (integer), `shareCount` (integer).
+      - AC3: The API response MUST include data formatted for a "Views Over Time" chart (e.g., an array of objects like `{"date": "YYYY-MM-DD", "views": 15}`).
+      - AC4: The API response MUST include data for "Top Referrers" or "Traffic Sources" (e.g., an array of objects like `{"source": "linkedin.com", "count": 10}`).
+      - AC5: The API response MUST include data for "Device Breakdown" (e.g., an array of objects like `{"device": "Desktop", "percentage": 60}`).
+      - AC6: Access to the API endpoint MUST be authenticated, ensuring that only the owner of the resume (or an authorized administrator) can retrieve its analytics data.
+      - AC7: The API response time SHOULD be less than 500ms (p95) for a typical dataset.
+      - AC8: If no analytics data exists for a resume, the API SHOULD return appropriate zero counts or empty arrays, not an error.
+
+  - id: US003
+    title: Display Resume Performance Metrics on a Dashboard
+    role: User
+    desire: To view a dedicated analytics dashboard for each of my resumes, showing key metrics (total/unique views, downloads, shares) and visualizations (views over time, top referrers, device breakdown)
+    benefit: I can easily understand my resume's performance and reach.
+    status: needs-ui # This story will require UX synthesis and UI building
+    acceptance_criteria:
+      - AC1: A clearly identifiable "Analytics" section or tab MUST be accessible to the user when viewing their own list of resumes or editing a specific resume.
+      - AC2: The dashboard MUST display the following key metrics as distinct visual elements: Total Views, Unique Views, Downloads, and Shares, fetched from the API.
+      - AC3: The dashboard MUST feature a line chart visualizing "Views Over Time."
+      - AC4: The dashboard MUST feature a chart (e.g., pie chart or bar chart) displaying "Traffic Sources."
+      - AC5: The dashboard MUST display "Device Breakdown" information.
+      - AC6: All UI components on the dashboard MUST adhere to the "Apple-Fluent Minimalism" and "Material 3 Foundations" design principles (Agents file Sections 1 & 5).
+      - AC7: The dashboard layout MUST be responsive and provide a clear, usable experience across common device breakpoints.
+      - AC8: If analytics data is still loading, an appropriate loading indicator MUST be displayed.
+      - AC9: If there is no analytics data available, the dashboard MUST display a clear message indicating this.
