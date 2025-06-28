@@ -1,0 +1,247 @@
+CVLeap — Developer & Agent Bible
+
+Version 1.0 • June 29 2025
+(Store this file in /docs/BIBLE.md at the root of every workspace so that any AI or human contributor can instantly align.)
+
+⸻
+
+1. North-Star Charter
+
+Principle	Why it matters	Practical rule
+User Joy First	A résumé is a life moment—friction is unacceptable.	If a flow feels slower or noisier than Apple Mail on iOS, rewrite it.
+Apple-Fluent Minimalism	Visual calm = perceived quality.	No element should compete with the content; embrace whitespace.
+Material 3 Foundations	Rapid component velocity + accessibility baked-in.	Start with the M3 spec, then skin with our Apple-inspired tokens.
+Agent-Driven DevOps	Code, test, ship autonomously.	Every task is owned by an AI agent that self-generates PRs & tests.
+Privacy & Trust	Résumés hold PII; trust drives virality.	Zero analytics cookies until user consents; field-level encryption.
+
+
+⸻
+
+2. Tech Stack Snapshot
+
+Layer	Choice	Rationale
+Frontend	Next.js 14 (App Router) + React 18 + TypeScript	SSR + streaming + edge deployment.
+UI Kit	Material UI v6 (Material 3) themed with Apple-inspired Design Tokens	Combine M3 component ergonomics with Cupertino polish.
+State	Zustand (ephemeral) + tRPC hooks (server sync)	Lightweight, testable, tree-shakeable.
+Mobile	Flutter 4 with Cupertino + Material 3 widgets	Single codebase, true native feel.
+Backend	Node.js 20 + Fastify (API), Go (high-perf PDF), Temporal Cloud (agents)	Async workflows & speed where it counts.
+Persistence	PostgreSQL 15 (Row-Level Security), S3/MinIO, Redis	Relational for PII, object for templates, cache for sessions.
+AI Fabric	LLM Router → OpenAI (o3), DeepSeek, Ollama local	Cost-aware fallback, multilingual.
+Infra	AWS EKS / Fly.io edge, Terraform + ArgoCD	GitOps, multi-region resilience.
+
+
+⸻
+
+3. Repository & Branching Convention
+
+cvleap/
+ ├─ apps/
+ │   ├─ web/
+ │   └─ mobile/
+ ├─ packages/
+ │   ├─ ui-kit/         # Shared M3+Apple components
+ │   ├─ schema/         # Zod/Turso schema + tRPC routers
+ │   ├─ pdf-service/    # Go WKHTML wrapper
+ │   └─ agents/         # Temporal workflows & activities
+ ├─ infra/              # Terraform modules, Helm charts
+ └─ docs/               # PRD, TRD, this BIBLE, ADRs
+
+main = always deployable.
+feat/<ticket> = single logical addition.
+CI auto-opens a draft PR; “QA-Validator Agent” must approve before merge.
+
+⸻
+
+4. Agent Ecosystem
+
+Agent ID	Role	Trigger	Required Output
+P0-Planner	Break natural-language tasks into epics, user stories, acceptance criteria.	New high-level feature request.	/docs/<epic>/stories.yaml
+UX-Synthesizer	Generate Figma JSON → Apple-inspired M3 screens, annotate padding/typography.	Story marked needs-ui.	/designs/<story>.figspec.json
+UI-Builder	Produce React/Flutter components + Storybook stories + visual tests.	Merged figspec.	PR across packages/ui-kit
+Backend-Architect	Craft tRPC procedures, DB migrations, Temporal workflows.	Story marked needs-api.	PR + /docs/erd/<feature>.png
+QA-Validator	Run unit, e2e, visual, LLM hallucination tests; comment coverage diff.	PR open.	GitHub check-run results.
+Sec-Auditor	Static analysis (Semgrep, Trivy), dependency diff.	Nightly or PR with security-impact label.	Report + required fixes.
+DevOps-Deployer	Build image, push to registry, promote to staging or rollback.	Merge to main.	Canary status update.
+
+Prompt Template Skeleton (for any code-generation Agent)
+
+You are ${AGENT_ROLE}.  
+Context: ${STORY_LINK}.  
+Output format: ${FORMAT_GUIDE}.  
+Constraints: Apple-inspired Minimalism, Material Design 3, WCAG 2.2 AA, 90 % Lighthouse ≥ 90.  
+
+Each agent must attach self-tests: Jest/Go-test & Playwright specs reaching ≥90 % pass rate locally.
+
+⸻
+
+5. UI / UX Commandments
+
+5.1 Visual Language
+
+Token Set	Apple Inspiration	Material 3 Mapping
+Color	Use dynamic monochrome tints like macOS Sonoma Control Center; accent = user-selected.	Map to M3 Primary, Secondary, Surface, support dark mode with theme.palette.mode.
+Typography	SF Pro on web, SF Pro Display headings; scale via optical sizes.	Bind to M3 display-/headline- tokens.
+Depth & Shadow	Layer 1 dp, 3 dp, 6 dp only; mimic iOS cards.	Use M3 Elevation API.
+Motion	ease-in-out‐standard 200ms; overscroll bounce on mobile.	Pair with M3 Motion specs.
+
+5.2 Layout Grid
+	•	Grid base: 8 px (Apple HIG)
+	•	Breakpoint tiers: xs < 600, sm 600–900, md 900–1280, lg 1280–1920, xl > 1920.
+	•	Safe-area insets respected (iPhone X+).
+
+5.3 Component Library Must-Haves
+	•	M3 Navigation Bar ≈ Apple “Large Title” collapsing header.
+	•	Segmented Controls styled like iOS (borderless pill) but implemented via ToggleButtonGroup.
+	•	Cards default to 12 px radius; “Pro” features show subtle glossy overlay.
+	•	Drag-and-Drop Resume Sections powered by @dnd-kit, auto snap to 8 px grid.
+
+⸻
+
+6. Feature Implementation Playbook
+
+6.1 Resume Builder
+	1.	<EditorCanvas> holds content-editable blocks with ProseMirror.
+	2.	SectionPlugin interface:
+
+export interface SectionPlugin {
+  id: string;
+  icon: ReactNode;
+  InsertMenu(): JSX.Element;
+  NodeSpec: PMNodeSpec;
+  render(props): JSX.Element;
+}
+
+
+	3.	Auto-Page-Break algorithm runs in WebWorker every keystroke debounce 150 ms.
+	4.	Offline sync via IndexedDB + localforage → background replay when online.
+
+6.2 AI Assist Pipeline
+
+graph LR
+A[User Draft] -->|/improve| R1(O3 8k)
+R1 -->|translate| R2(DeepSeek)
+R2 -->|score| ATS(ATS Scorer)
+ATS -->|comment| A
+
+	•	Prompt uses role-advice chain: “Act as veteran recruiter … produce bullet-point suggestions only.”
+	•	LLM tokens ≤ 1 000 per call; fallback to local KenLM for quick grammar hints offline.
+
+6.3 Autonomous Job Submission
+	1.	Temporal JobFlow workflow:
+	•	PrepareDocs
+	•	LaunchHeadlessBrowser (Playwright/Chromium)
+	•	SolveCaptcha (2Captcha API)
+	•	FillForms (heuristics + site-specific strategy map)
+	•	UploadResume
+	•	RecordOutcome
+	2.	Cost Guardrail: Budget param; abort if spent ≥ $budget.
+	3.	Status streamed to user terminal via WebSocket (Server-Sent Events fallback).
+
+⸻
+
+7. Coding Standards
+
+Topic	Rule
+Lint	ESLint airbnb + Prettier; Go golangci-lint.
+Naming	PascalCase React comps, camelCase variables, SCREAMING_SNAKE env vars.
+Tests	Arrange-Act-Assert; no magic numbers; snapshot tests for UI pinned to MUI theme hash.
+Commits	Conventional Commits (feat:, fix:, refactor:…).
+Docs	JSDoc/GoDoc mandatory; every exported symbol.
+
+
+⸻
+
+8. Quality Gates & Performance Budgets
+
+Metric	Target
+Lighthouse PWA	≥ 90 all categories on iPhone 12 mini simulated 3G.
+Largest Contentful Paint	< 1.5 s (p95).
+JS Bundle	≤ 200 kB gzipped initial.
+PDF Render	< 500 ms (A4, two pages).
+Agent Success Rate	≥ 95 % of job submissions finish without human retry.
+
+
+⸻
+
+9. CI / CD Flow
+
+sequenceDiagram
+    participant Dev
+    participant GitHub
+    participant CI
+    participant Staging
+    participant Prod
+
+    Dev->>GitHub: Push feat/xyz
+    GitHub->>CI: Trigger
+    CI->>CI: Lint → Build → Tests → Storybook static
+    CI-->>GitHub: QA-Validator status
+    Dev->>GitHub: Merge PR
+    GitHub->>CI: Build main
+    CI->>Staging: Helm upgrade --install canary
+    QA-Validator->>Staging: Smoke & visual tests
+    Staging-->>CI: OK?
+    CI->>Prod: Promote after 30 min if healthy
+
+Rollback = argo rollouts undo cvleap-web@<previous-hash>.
+
+⸻
+
+10. Security & Compliance Blueprint
+	1.	OWASP Top 10 counter-measures baked into Fastify hooks.
+	2.	RLS Postgres policies: user _id matches jwt.sub.
+	3.	DPA & GDPR: DSAR API /privacy/export delivers zip in ≤30 days.
+	4.	Key Rotation: AWS KMS automatic annual rotation; agents prompted 30 days prior.
+	5.	Pen-Test Agent (open-source zap-scan) runs monthly; fails pipeline on high CVSS > 7.
+
+⸻
+
+11. Accessibility (WCAG 2.2 AA)
+	•	All interactive elements 44 × 44 px touch target.
+	•	Color-contrast ratio ≥ 4.5:1; tokenized in palette.accessibility.
+	•	aria-live="polite" announcements for section reorder.
+	•	Prefer system UI fonts for legibility.
+
+⸻
+
+12. Internationalization & RTL
+	•	next-intl locale folders; default fallback en_GB.
+	•	Right-to-left built-time variant; mirroring verified via Cypress cy.viewport('iphone-x').
+	•	Date / number formatting through Intl.
+
+⸻
+
+13. Observability & Cost-Watch
+
+Tool	Purpose
+OpenTelemetry SDK	Trace user → LLM → DB (link résumé saves to PDF export).
+Grafana Cloud	Dashboards + alert for p95 LCP, Temporal errors.
+Infracost	Comment AWS diff to PR; kill agents if cost estimate passes $X/day.
+
+
+⸻
+
+14. Glossary
+	•	M3 — Material Design 3 spec (2021–present).
+	•	LLM Router — Service selecting cheapest / fastest provider per prompt.
+	•	Temporal Workflow — Durable function coordinating long-running tasks.
+	•	ATS — Applicant Tracking System; we target top 25 vendors for parse test.
+
+⸻
+
+🏁 Launch-Readiness Checklist (agents tick automatically)
+	•	Feature flags cleaned
+	•	Privacy policy updated
+	•	Lighthouse ≥ 90 on staging
+	•	Pen-test pass
+	•	Disaster-recovery drill pass (RTO 30 min)
+
+⸻
+
+🌟 Final Encouragement
+
+Every line of code or pixel you craft is a stepping-stone for someone landing their dream role. Keep it sleek, inclusive, and delightful—then let the agents handle the grind while humans feel the magic.
+
+“Design is not just what it looks like and feels like. Design is how it works.” – Steve Jobs
+
+Happy building! 🎉
