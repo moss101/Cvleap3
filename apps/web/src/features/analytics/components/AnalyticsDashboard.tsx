@@ -1,6 +1,6 @@
 import React from 'react';
 import { Typography, CircularProgress, Alert, Box, Paper } from '@mui/material';
-// import { trpc } from '@/utils/trpc'; // Actual path to your tRPC client setup
+import { trpc } from '@/utils/trpc'; // Actual path to your tRPC client setup
 import MetricCardsContainer from './MetricCardsContainer';
 import ViewsOverTimeChartWrapper from './ViewsOverTimeChartWrapper';
 import SupportingChartsContainer from './SupportingChartsContainer';
@@ -77,8 +77,8 @@ interface AnalyticsDashboardProps {
 
 const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ resumeId, resumeName = "Selected Resume" }) => {
   // Replace useMockTrpcQuery with your actual tRPC hook in a real app
-  // const { data: analyticsData, isLoading, error } = trpc.analytics.getResumeAnalytics.useQuery({ resumeId });
-  const { data: analyticsData, isLoading, error } = useMockTrpcQuery({ resumeId });
+  const { data: analyticsData, isLoading, error } = trpc.analytics.getResumeAnalytics.useQuery({ resumeId });
+  // const { data: analyticsData, isLoading, error } = useMockTrpcQuery({ resumeId });
 
   if (isLoading) {
     return (
