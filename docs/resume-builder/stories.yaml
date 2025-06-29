@@ -1,0 +1,129 @@
+epic:
+  name: Interactive Resume Construction Environment
+  description: Develop a highly interactive and user-friendly resume building engine that allows users to seamlessly create, edit, and organize their resume content. The engine will feature a responsive three-panel layout (sidebar for controls, main editor, real-time preview), support for distinct, manageable resume sections, rich text editing capabilities within sections using ProseMirror, and intuitive drag-and-drop for section reordering. The system will ensure data integrity through auto-saving and provide a live preview that accurately reflects the final document.
+  prd_references:
+    - "PRD Section 3.1: Resume Builder Engine"
+    - "Agents file Section 6.1: Resume Builder (ProseMirror, SectionPlugin)"
+    - "Agents file Section 2: Tech Stack"
+    - "PRD Section 2.2: Database Schema (resumes table)"
+
+user_stories:
+  - id: RB-US001
+    title: Establish Core Resume Builder Layout and Load/Create Resume
+    role: User
+    desire: To see a three-panel layout (sidebar, editor, preview) when I open the resume builder, and be able to start a new resume or load an existing one.
+    benefit: I have a clear and organized workspace to begin building or editing my resume.
+    status: needs-requirements # Default status
+    acceptance_criteria:
+      - AC1: On launching for a new resume, a three-panel UI (sidebar, editor, preview) MUST be displayed.
+      - AC2: New resume editor/preview MUST show a default empty state or minimal structure.
+      - AC3: Loading an existing resume MUST populate editor/preview with its content.
+      - AC4: Layout MUST be responsive (details per UX-Spec).
+      - AC5: Basic navigation/controls (e.g., back, save button placeholder) MUST be present.
+
+  - id: RB-US002
+    title: Manage Resume Sections (Add & Delete)
+    role: User
+    desire: To be able to add new sections (Experience, Education, etc.) from a list and delete existing sections.
+    benefit: I can structure my resume according to my needs.
+    status: needs-requirements
+    acceptance_criteria:
+      - AC1: User MUST be able to select from available section types to add.
+      - AC2: Adding a section MUST append it to the resume structure and update editor/preview.
+      - AC3: Each section MUST have a clear visual control for deletion.
+      - AC4: Deleting a section MUST prompt for confirmation.
+      - AC5: Confirmed deletion MUST remove section from editor/preview.
+      - AC6: System SHOULD prevent deletion of mandatory core sections (if any defined).
+
+  - id: RB-US003
+    title: Reorder Resume Sections with Drag and Drop
+    role: User
+    desire: To easily reorder resume sections by dragging and dropping them.
+    benefit: I can arrange my resume content in the most effective order.
+    status: needs-requirements
+    acceptance_criteria:
+      - AC1: User MUST be able to reorder sections via drag-and-drop.
+      - AC2: Visual cues MUST indicate valid drop targets during dragging.
+      - AC3: Dropping a section MUST update its order in data, editor, and preview.
+      - AC4: Drag-and-drop MUST use @dnd-kit (Agents file 5.3).
+      - AC5: Interaction MUST be smooth and responsive.
+
+  - id: RB-US004
+    title: Edit Content within Resume Sections with Rich Text Capabilities
+    role: User
+    desire: To edit text within sections using a rich text editor (ProseMirror) supporting basic formatting and for different section types to provide appropriate fields.
+    benefit: I can accurately input and style my resume information.
+    status: needs-requirements
+    acceptance_criteria:
+      - AC1: Each section type (via SectionPlugin) MUST render its specific fields/editing interface.
+      - AC2: Text input fields MUST use ProseMirror for rich text editing.
+      - AC3: Basic formatting (bold, italic, bullets, etc.) MUST be available in ProseMirror.
+      - AC4: Changes in ProseMirror MUST update the underlying resume data.
+      - AC5: SectionPlugin interface (Agents file 6.1) MUST be used.
+      - AC6: Initial common section plugins (Personal Info, Experience, etc.) MUST be implemented.
+
+  - id: RB-US005
+    title: View Real-time Preview of Resume
+    role: User
+    desire: The preview panel to update in real-time as I make changes.
+    benefit: I can immediately see how my resume will look.
+    status: needs-requirements
+    acceptance_criteria:
+      - AC1: Preview panel MUST accurately render resume based on current ResumeData.
+      - AC2: Editor changes MUST trigger near immediate preview updates (debounce < 200ms).
+      - AC3: Preview SHOULD be WYSIWYG within basic templating scope.
+      - AC4: Preview panel content MUST NOT be directly editable.
+      - AC5: Auto-Page-Break algorithm (Agents file 6.1) MUST simulate page breaks in preview.
+
+  - id: RB-US006
+    title: Automatically Save Resume Changes
+    role: User
+    desire: My resume changes to be saved automatically to the backend.
+    benefit: I don't lose my work if I forget to save or my session is interrupted.
+    status: needs-requirements
+    acceptance_criteria:
+      - AC1: Changes MUST be auto-saved to backend without explicit user save action.
+      - AC2: Auto-save SHOULD trigger after short inactivity or significant changes.
+      - AC3: Visual indicator MUST show auto-save status subtly.
+      - AC4: User MUST be notified on auto-save failure; system SHOULD retry or offer manual save.
+      - AC5: Auto-save MUST call the backend update API (from RB-US007).
+
+  - id: RB-US007
+    title: Implement Backend Services for Resume Data Persistence
+    role: System (Backend Developer/Architect)
+    desire: Secure and efficient backend tRPC/API endpoints for CRUD operations on resume documents.
+    benefit: User resume data is reliably persisted and accessible.
+    status: needs-backend-arch
+    acceptance_criteria:
+      - AC1: `POST /api/resumes` (or tRPC equivalent) MUST create new resume for authenticated user.
+      - AC2: `GET /api/resumes/:id` MUST fetch existing resume for authenticated owner.
+      - AC3: `PUT /api/resumes/:id` MUST update/save resume content/settings for authenticated owner.
+      - AC4: `DELETE /api/resumes/:id` MUST delete resume for authenticated owner.
+      - AC5: `GET /api/resumes` MUST list resumes for authenticated user.
+      - AC6: All endpoints MUST be authenticated and authorized.
+      - AC7: Resume `content` MUST be stored as JSONB (PRD 2.2).
+
+  - id: RB-US008
+    title: Define and Implement SectionPlugin Architecture
+    role: System (Developer/Architect)
+    desire: A flexible SectionPlugin interface and system to register/render plugins.
+    benefit: New resume section types can be easily added and managed.
+    status: needs-backend-arch # Also frontend architecture implications
+    acceptance_criteria:
+      - AC1: TypeScript `SectionPlugin` interface MUST be defined (id, title, icon, defaultData, EditorComponent, PreviewComponent).
+      - AC2: Plugin registration mechanism MUST allow adding new section types.
+      - AC3: `EditorCanvas` MUST use plugins to render `EditorComponent` for each section.
+      - AC4: `PreviewPanel` MUST use plugins to render `PreviewComponent` for each section.
+      - AC5: Data flow (`onChange`) MUST correctly update central resume state from `EditorComponent`s.
+
+  - id: RB-US009
+    title: Apply Basic Styling/Template to Real-time Preview
+    role: User
+    desire: The real-time preview to reflect a basic, clean resume template.
+    benefit: The preview is a meaningful representation of a resume document.
+    status: needs-requirements
+    acceptance_criteria:
+      - AC1: `PreviewPanel` MUST apply default professional visual styling (fonts, spacing, headings).
+      - AC2: Basic template SHOULD ensure readability and professional appearance.
+      - AC3: Preview styles MUST be distinct from editor UI styling.
+      - AC4: Preview SHOULD roughly correspond to standard document size, including page break simulation.
