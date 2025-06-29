@@ -15,7 +15,7 @@ user_stories:
     role: User
     desire: The AI to generate draft content (e.g., professional summary, work experience bullet points) based on minimal input (like job title, company, key responsibilities/skills)
     benefit: I can overcome writer's block and quickly create initial professional-sounding resume content.
-    status: ui-components-outlined
+    status: implemented
     acceptance_criteria:
       - AC1: User MUST be able to trigger AI content generation for designated resume sections.
       - AC2: System MUST provide an interface for user to input context/keywords.
@@ -33,7 +33,7 @@ user_stories:
     role: User
     desire: The AI to analyze my written resume sections and provide specific, actionable suggestions for improving clarity, impact, keywords, grammar, and overall quality
     benefit: I can refine my resume to be more professional, concise, and ATS-friendly.
-    status: ui-components-outlined
+    status: implemented
     acceptance_criteria:
       - AC1: User MUST be able to select text for AI improvement suggestions.
       - AC2: Backend (`/api/ai/improve-content`) MUST receive selected content and context.
@@ -65,7 +65,7 @@ user_stories:
     role: System (Backend Developer/Architect)
     desire: To implement robust backend services that securely integrate with chosen AI models, manage prompt engineering, handle API request/response cycles, and expose these capabilities through secure and well-defined tRPC/API endpoints
     benefit: Frontend applications can reliably and seamlessly request and receive AI-powered assistance for users.
-    status: implemented # Service methods are now implemented (conceptually)
+    status: implemented
     acceptance_criteria:
       - AC1: Backend services (e.g., `AIAssistantService`) MUST handle communication with external AI APIs.
       - AC2: Secure management of AI service API keys MUST be implemented.
