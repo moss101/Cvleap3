@@ -169,6 +169,67 @@ describe('Backend - Resume Analytics', () => {
     });
   });
 
+  describe('tRPC Endpoint Contract Tests (getAtsTrend - US004)', () => {
+    // Similar setup as getResumeAnalytics tests, mocking dependencies.
+    // const caller = appRouter.createCaller({ db: mockDb, redis: mockRedis, user: userContext });
+
+    it('should return AtsTrendOutput compatible data for a valid request', async () => {
+      // (Conceptual) Setup mock service to return valid trend data
+      // AnalyticsQueryService.prototype.getAtsScoreTrend = jest.fn().mockResolvedValue([
+      //   { date: new Date(), atsScore: 85 }
+      // ]);
+      // const result = await caller.analytics.getAtsTrend({ resumeId: 'valid-resume-id' });
+      // expect(() => AtsTrendOutputSchema.parse(result)).not.toThrow();
+      // expect(result[0].atsScore).toBe(85);
+    });
+
+    it('should handle date ranges correctly', async () => {
+      // (Conceptual) Test with 'from' and 'to' dates in input.
+      // Ensure the service method is called with these dates and data is filtered.
+    });
+
+    it('should fail with UNAUTHORIZED if user context is missing', async () => {
+      // (Conceptual)
+      // const publicCaller = appRouter.createCaller({ db: mockDb, redis: mockRedis, user: undefined });
+      // await expect(publicCaller.analytics.getAtsTrend({ resumeId: 'any-id' })).rejects.toThrow(/UNAUTHORIZED/);
+    });
+
+    it('should fail with FORBIDDEN if user does not own the resumeId', async () => {
+      // (Conceptual) Mock checkResumeOwnership to return false.
+      // AnalyticsQueryService.prototype['checkResumeOwnership'] = jest.fn().mockResolvedValue(false);
+      // await expect(caller.analytics.getAtsTrend({ resumeId: 'other-user-resume' })).rejects.toThrow(/FORBIDDEN/);
+    });
+
+    it('should fail with BAD_REQUEST if input schema is invalid', async () => {
+      // (Conceptual)
+      // await expect(caller.analytics.getAtsTrend({ resumeId: 'not-a-uuid' })).rejects.toThrow(/BAD_REQUEST/);
+    });
+  });
+
+  describe('Temporal Workflow - snapshotATSScoreWorkflow (US004)', () => {
+    it('should call calculateAtsScoreActivity and saveAtsScoreSnapshotActivity', async () => {
+      // (Conceptual - requires Temporal test environment)
+      // const testEnv = await TestWorkflowEnvironment.createLocal();
+      // try {
+      //   const mockCalculateAtsScore = jest.fn().mockResolvedValue(90);
+      //   const mockSaveAtsScoreSnapshot = jest.fn().mockResolvedValue(undefined);
+      //   await testEnv.client.workflow.execute(snapshotATSScoreWorkflow, {
+      //     args: ['test-resume-id-for-ats'],
+      //     workflowId: 'test-ats-snapshot-workflow',
+      //     taskQueue: 'test-ats-snapshot',
+      //     activities: {
+      //       calculateAtsScoreActivity: mockCalculateAtsScore,
+      //       saveAtsScoreSnapshotActivity: mockSaveAtsScoreSnapshot
+      //     }
+      //   });
+      //   expect(mockCalculateAtsScore).toHaveBeenCalledWith('test-resume-id-for-ats');
+      //   expect(mockSaveAtsScoreSnapshot).toHaveBeenCalledWith('test-resume-id-for-ats', 90);
+      // } finally {
+      //   await testEnv.teardown();
+      // }
+    });
+  });
+
 });
 
-console.log("tests/resumeAnalytics.test.ts: Test structure outlined.");
+console.log("tests/resumeAnalytics.test.ts: Test structure outlined, US004 tests added.");

@@ -71,6 +71,18 @@ model ResumeAnalytics {
   @@index([created_at])
 }
 
+model AtsScoreSnapshot {
+  id          String   @id @default(uuid())
+  resume_id   String
+  score       Int // Percentage score, e.g., 0-100
+  created_at  DateTime @default(now())
+  resume      Resume   @relation(fields: [resume_id], references: [id], onDelete: Cascade)
+
+  @@index([resume_id])
+  @@index([created_at])
+  @@map("ats_score_snapshot")
+}
+
 // AI Content Cache from PRD, for completeness if schema is being initialized
 model AiContentCache {
   id                  String    @id @default(uuid())

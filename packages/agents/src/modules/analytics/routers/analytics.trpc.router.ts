@@ -98,6 +98,30 @@ export const analyticsTrpcRouter = createTRPCRouter({
         throw error;
       }
     }),
+
+  /**
+   * Fetches ATS score trend data for a specific resume over a date range.
+   * User must be authenticated and own the resume.
+   * US004
+   */
+  getAtsTrend: protectedProcedure
+    .input(GetAtsTrendInputSchema) // Defined in analytics.schema.ts
+    .output(AtsTrendOutputSchema)    // Defined in analytics.schema.ts
+    .query(async ({ ctx, input }) => {
+      if (!ctx.user) {
+        throw new Error("Authentication required."); // Should be handled by protectedProcedure
+      }
+      const analyticsQueryService = new AnalyticsQueryService(ctx.db, ctx.redis, ctx.user);
+      try {
+        // The getAtsScoreTrend method will be added to AnalyticsQueryService
+        const trendData = await analyticsQueryService.getAtsScoreTrend(input.resumeId, input.range);
+        return trendData;
+      } catch (error: any) {
+        console.error(`Error in getAtsTrend for resumeId ${input.resumeId}:`, error);
+        // Re-throw or transform into a tRPC-specific error
+        throw error;
+      }
+    }),
 });
 
 // Example of how this router might be merged into a root appRouter

@@ -45,6 +45,26 @@ export const AnalyticsDataOutputSchema = z.object({
 });
 export type AnalyticsDataOutput = z.infer<typeof AnalyticsDataOutputSchema>;
 
+// Schemas for ATS Score Trend (US004)
+export const GetAtsTrendInputSchema = z.object({
+  resumeId: z.string().uuid({ message: "Invalid Resume ID format" }),
+  range: z.object({
+    from: z.date().optional(),
+    to: z.date().optional(),
+  }).optional(),
+});
+export type GetAtsTrendInput = z.infer<typeof GetAtsTrendInputSchema>;
+
+export const AtsTrendDataPointSchema = z.object({
+  date: z.date(), // Or z.string() if sending ISO strings
+  atsScore: z.number().int().min(0).max(100),
+});
+export type AtsTrendDataPoint = z.infer<typeof AtsTrendDataPointSchema>;
+
+export const AtsTrendOutputSchema = z.array(AtsTrendDataPointSchema);
+export type AtsTrendOutput = z.infer<typeof AtsTrendOutputSchema>;
+
+
 // Example of how it might be registered in a tRPC router (conceptual)
 /*
 import { createTRPCRouter, publicProcedure } from '../../../../../core/trpc'; // Adjust path as needed

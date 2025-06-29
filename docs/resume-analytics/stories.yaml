@@ -56,3 +56,19 @@ user_stories:
       - AC7: The dashboard layout MUST be responsive and provide a clear, usable experience across common device breakpoints.
       - AC8: If analytics data is still loading, an appropriate loading indicator MUST be displayed.
       - AC9: If there is no analytics data available, the dashboard MUST display a clear message indicating this.
+
+  - id: US004
+    epic: Resume Analytics
+    title: Persist ATS score snapshots
+    role: System # Or "User" if they trigger it via an action that implies scoring
+    desire: To store daily (or on-demand) ATS score snapshots for each resume
+    benefit: So that trends in resume optimization and ATS-friendliness can be tracked and displayed over time.
+    acceptance_criteria:
+      - AC1: An `ats_score_snapshot` table MUST be created in the database to store `id`, `resume_id`, `score` (percentage), and `created_at`.
+      - AC2: A mechanism (e.g., Temporal Workflow `snapshotATSScore`) MUST exist to calculate/retrieve and store an ATS score for a given `resume_id`.
+      - AC3: This mechanism SHOULD be triggerable after a resume edit or on a scheduled basis (e.g., nightly).
+      - AC4: The tRPC procedure `resumeAnalytics.getTrend(resumeId: string, range?: {from?: Date, to?: Date})` MUST be implemented.
+      - AC5: `getTrend` MUST return an array of objects, each containing `{ date: Date, atsScore: number }`.
+      - AC6: `getTrend` query MUST respond in <200 ms (p90) for a 180-day range.
+      - AC7: `getTrend` MUST enforce RLS (user owns `resumeId`).
+    status: needs-api

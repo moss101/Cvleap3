@@ -175,6 +175,58 @@ export class AnalyticsQueryService {
 
     return result;
   }
+
+  async getAtsScoreTrend(
+    resumeId: string,
+    range?: { from?: Date; to?: Date }
+  ): Promise<Array<{ date: Date; atsScore: number }>> { // Corresponds to AtsTrendOutputSchema
+    // TODO: Replace with actual Prisma client query once Prisma is fully integrated.
+    // This requires the `db` constructor argument to be a PrismaClient instance.
+    console.log(`(SIMULATED DB) Checking ownership for ATS Trend for resume ${resumeId} by user ${this.user.id}`);
+    const hasPermission = await this.checkResumeOwnership(resumeId);
+    if (!hasPermission) {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to view ATS trends for this resume.' });
+    }
+
+    console.log(`(SIMULATED DB) Fetching ATS score trend for resume ${resumeId}`, range);
+
+    // Example Prisma query (conceptual):
+    /*
+    const whereClause: any = { resume_id: resumeId };
+    if (range?.from) {
+      whereClause.created_at = { ...whereClause.created_at, gte: range.from };
+    }
+    if (range?.to) {
+      whereClause.created_at = { ...whereClause.created_at, lte: range.to };
+    }
+    const snapshots = await (this.db as any).atsScoreSnapshot.findMany({
+      where: whereClause,
+      orderBy: { created_at: 'asc' },
+      select: { created_at: true, score: true }
+    });
+    return snapshots.map(s => ({ date: s.created_at, atsScore: s.score }));
+    */
+
+    // Placeholder simulation logic:
+    const trendData: Array<{ date: Date; atsScore: number }> = [];
+    const numDays = range?.from && range?.to ?
+                    Math.max(1, (range.to.getTime() - range.from.getTime()) / (1000 * 3600 * 24)) :
+                    30; // Default to 30 days if no range
+
+    let currentDate = range?.from || new Date(new Date().setDate(new Date().getDate() - numDays + 1));
+
+    for (let i = 0; i < numDays; i++) {
+      const pointDate = new Date(currentDate);
+      pointDate.setDate(pointDate.getDate() + i);
+      if (range?.to && pointDate > range.to) break;
+
+      trendData.push({
+        date: pointDate,
+        atsScore: Math.floor(Math.random() * 31) + 60, // Random score between 60-90
+      });
+    }
+    return trendData;
+  }
 }
 
 // Example Usage (conceptual)

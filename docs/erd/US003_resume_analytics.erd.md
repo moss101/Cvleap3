@@ -47,8 +47,16 @@ erDiagram
     User ||--o{ Resume : "has many"
     Template ||--o{ Resume : "can apply to many"
     Resume ||--o{ ResumeAnalytics : "has many events"
+    Resume ||--o{ AtsScoreSnapshot : "has many snapshots"
 
-    %% Note: AiContentCache is omitted as per focus on resume analytics for US003
+    AtsScoreSnapshot {
+        String id PK "uuid"
+        String resume_id FK
+        Int score "percentage"
+        DateTime created_at
+    }
+
+    %% Note: AiContentCache is omitted as per focus on resume analytics for US003 & US004
     %% but it exists in the schema.prisma.
 ```
 
