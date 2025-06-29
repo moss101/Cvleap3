@@ -122,6 +122,29 @@ export const analyticsTrpcRouter = createTRPCRouter({
         throw error;
       }
     }),
+
+  /**
+   * Fetches aggregated geographical data of resume views.
+   * User must be authenticated and own the resume.
+   * US005
+   */
+  getGeoData: protectedProcedure
+    .input(GetGeoDataInputSchema) // Defined in analytics.schema.ts
+    .output(GeoDataOutputSchema)  // Defined in analytics.schema.ts
+    .query(async ({ ctx, input }) => {
+      if (!ctx.user) {
+        throw new Error("Authentication required."); // Should be handled by protectedProcedure
+      }
+      const analyticsQueryService = new AnalyticsQueryService(ctx.db, ctx.redis, ctx.user);
+      try {
+        // The getGeoData method will be added to AnalyticsQueryService
+        const geoData = await analyticsQueryService.getGeoData(input.resumeId, input.range);
+        return geoData;
+      } catch (error: any) {
+        console.error(`Error in getGeoData for resumeId ${input.resumeId}:`, error);
+        throw error;
+      }
+    }),
 });
 
 // Example of how this router might be merged into a root appRouter

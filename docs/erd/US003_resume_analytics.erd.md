@@ -48,6 +48,7 @@ erDiagram
     Template ||--o{ Resume : "can apply to many"
     Resume ||--o{ ResumeAnalytics : "has many events"
     Resume ||--o{ AtsScoreSnapshot : "has many snapshots"
+    Resume ||--o{ ResumeViewGeoData : "has many geo data points"
 
     AtsScoreSnapshot {
         String id PK "uuid"
@@ -56,7 +57,15 @@ erDiagram
         DateTime created_at
     }
 
-    %% Note: AiContentCache is omitted as per focus on resume analytics for US003 & US004
+    ResumeViewGeoData {
+        String id PK "uuid"
+        String resume_id FK
+        String country_code "ISO 3166-1 alpha-2"
+        Int view_count "default(0)"
+        DateTime last_updated
+    }
+
+    %% Note: AiContentCache is omitted as per focus on resume analytics for US003, US004 & US005
     %% but it exists in the schema.prisma.
 ```
 

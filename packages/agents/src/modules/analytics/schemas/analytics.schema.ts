@@ -64,6 +64,44 @@ export type AtsTrendDataPoint = z.infer<typeof AtsTrendDataPointSchema>;
 export const AtsTrendOutputSchema = z.array(AtsTrendDataPointSchema);
 export type AtsTrendOutput = z.infer<typeof AtsTrendOutputSchema>;
 
+// Schemas for Geo Heatmap Data (US005)
+export const GetGeoDataInputSchema = z.object({
+  resumeId: z.string().uuid({ message: "Invalid Resume ID format" }),
+  range: z.object({ // Optional range, might not be needed if geo data is always "all time" or periodically aggregated
+    from: z.date().optional(),
+    to: z.date().optional(),
+  }).optional(),
+});
+export type GetGeoDataInput = z.infer<typeof GetGeoDataInputSchema>;
+
+export const GeoDataPointSchema = z.object({
+  country: z.string(), // ISO 3166-1 alpha-2 code, or country name
+  opens: z.number().int().min(0),
+});
+export type GeoDataPoint = z.infer<typeof GeoDataPointSchema>;
+
+export const GeoDataOutputSchema = z.array(GeoDataPointSchema);
+export type GeoDataOutput = z.infer<typeof GeoDataOutputSchema>;
+
+// Schemas for Geo Heatmap Data (US005)
+export const GetGeoDataInputSchema = z.object({
+  resumeId: z.string().uuid({ message: "Invalid Resume ID format" }),
+  range: z.object({ // Optional range, might not be needed if geo data is always "all time" or periodically aggregated
+    from: z.date().optional(),
+    to: z.date().optional(),
+  }).optional(), // Making the whole range object optional
+});
+export type GetGeoDataInput = z.infer<typeof GetGeoDataInputSchema>;
+
+export const GeoDataPointSchema = z.object({
+  country: z.string(), // Could be ISO 3166-1 alpha-2 code, or country name
+  opens: z.number().int().min(0),
+});
+export type GeoDataPoint = z.infer<typeof GeoDataPointSchema>;
+
+export const GeoDataOutputSchema = z.array(GeoDataPointSchema);
+export type GeoDataOutput = z.infer<typeof GeoDataOutputSchema>;
+
 
 // Example of how it might be registered in a tRPC router (conceptual)
 /*

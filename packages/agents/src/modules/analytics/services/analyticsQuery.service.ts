@@ -227,6 +227,46 @@ export class AnalyticsQueryService {
     }
     return trendData;
   }
+
+  async getGeoData(
+    resumeId: string,
+    range?: { from?: Date; to?: Date } // Range might apply to the created_at of original view events
+  ): Promise<Array<{ country: string; opens: number }>> { // Corresponds to GeoDataOutputSchema
+    // TODO: Replace with actual Prisma client query once Prisma is fully integrated.
+    console.log(`(SIMULATED DB) Checking ownership for Geo Data for resume ${resumeId} by user ${this.user.id}`);
+    const hasPermission = await this.checkResumeOwnership(resumeId);
+    if (!hasPermission) {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to view geo data for this resume.' });
+    }
+
+    console.log(`(SIMULATED DB) Fetching geo data for resume ${resumeId}`, range);
+
+    // Example Prisma query (conceptual):
+    // This query would be against the 'ResumeViewGeoData' table which stores aggregated counts.
+    // The 'range' might be tricky here if 'ResumeViewGeoData.last_updated' is the only timestamp.
+    // If 'range' needs to filter by original event dates, the aggregation process for ResumeViewGeoData
+    // would need to be more sophisticated or queries would be more complex, possibly joining back to ResumeAnalytics.
+    // For simplicity, assume ResumeViewGeoData stores relevant, possibly pre-aggregated data.
+    /*
+    const geoRecords = await (this.db as any).resumeViewGeoData.findMany({
+      where: { resume_id: resumeId }, // Potentially add date filtering based on 'last_updated' if applicable
+      orderBy: { view_count: 'desc' },
+      select: { country_code: true, view_count: true }
+    });
+    return geoRecords.map(r => ({ country: r.country_code, opens: r.view_count }));
+    */
+
+    // Placeholder simulation logic:
+    const geoData: Array<{ country: string; opens: number }> = [
+      { country: 'US', opens: Math.floor(Math.random() * 100) + 20 },
+      { country: 'CA', opens: Math.floor(Math.random() * 50) + 10 },
+      { country: 'GB', opens: Math.floor(Math.random() * 40) + 5 },
+      { country: 'IN', opens: Math.floor(Math.random() * 30) + 5 },
+      { country: 'DE', opens: Math.floor(Math.random() * 20) + 2 },
+    ];
+    // Sort by opens descending and take top N or filter by some threshold
+    return geoData.sort((a, b) => b.opens - a.opens).slice(0, 5);
+  }
 }
 
 // Example Usage (conceptual)

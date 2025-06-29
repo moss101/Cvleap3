@@ -83,6 +83,19 @@ model AtsScoreSnapshot {
   @@map("ats_score_snapshot")
 }
 
+model ResumeViewGeoData {
+  id           String   @id @default(uuid())
+  resume_id    String
+  country_code String   // ISO 3166-1 alpha-2 country code
+  view_count   Int      @default(0)
+  last_updated DateTime @updatedAt // To track when this aggregate was last updated
+  resume       Resume   @relation(fields: [resume_id], references: [id], onDelete: Cascade)
+
+  @@unique([resume_id, country_code]) // Each resume can only have one entry per country
+  @@index([resume_id])
+  @@map("resume_view_geo_data")
+}
+
 // AI Content Cache from PRD, for completeness if schema is being initialized
 model AiContentCache {
   id                  String    @id @default(uuid())

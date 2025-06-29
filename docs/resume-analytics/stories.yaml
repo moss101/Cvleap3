@@ -72,3 +72,19 @@ user_stories:
       - AC6: `getTrend` query MUST respond in <200 ms (p90) for a 180-day range.
       - AC7: `getTrend` MUST enforce RLS (user owns `resumeId`).
     status: needs-api
+
+  - id: US005
+    epic: Resume Analytics
+    title: Persist & serve recruiter geo-heatmap data
+    role: System # Data is aggregated for the user
+    desire: To store and retrieve aggregated geographical data of resume views
+    benefit: So that users can understand the geographic distribution of their resume's audience.
+    acceptance_criteria:
+      - AC1: A `resume_view_geo_data` table (or similar) MUST be created to store aggregated view counts per country for each resume (e.g., `id`, `resume_id`, `country_code` (ISO 3166-1 alpha-2), `view_count`, `last_updated`).
+      - AC2: A mechanism (e.g., Temporal Workflow or batch job) MUST exist to periodically process `ResumeAnalytics` events, perform IP-to-country lookups on `visitor_ip`, and aggregate results into `resume_view_geo_data`.
+      - AC3: IP-to-country lookups SHOULD use a reliable and privacy-conscious method. Stored IP addresses in `ResumeAnalytics` are expected to be anonymized as per earlier requirements; this implies the raw IP for lookup must be captured before anonymization if this feature is to be accurate, or a less precise method used. (Clarification might be needed on exact IP handling for this).
+      - AC4: The tRPC procedure `resumeAnalytics.getGeo(resumeId: string, range?: {from?: Date, to?: Date})` MUST be implemented.
+      - AC5: `getGeo` MUST return an array of objects, each containing `{ country: string, opens: number }` (or similar).
+      - AC6: `getGeo` query MUST respond in <300 ms (p90) for typical data volumes.
+      - AC7: `getGeo` MUST enforce RLS (user owns `resumeId`).
+    status: needs-api
