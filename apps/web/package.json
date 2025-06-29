@@ -1,0 +1,9 @@
+{
+  "name": "@cvleap/web",
+  "private": true,
+  "version": "0.0.0",
+  "main": "next.config.js",
+  "dependencies": {
+    // leave this empty on purpose
+  }
+}
