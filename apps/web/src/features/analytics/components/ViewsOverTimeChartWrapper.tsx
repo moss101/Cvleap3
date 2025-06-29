@@ -23,11 +23,35 @@ const ChartContainer = styled(Box)(({ theme }) => ({
   color: theme.palette.text.secondary,
 }));
 
+// Figspec meta values (for reference)
+const cardBackgroundColor = '#FFFFFF'; // meta.cardBackgroundColor
+const textColorPrimary = '#1D1D1F'; // meta.textColorPrimary
+const gridBase = 8;
+
 const ViewsOverTimeChartWrapper: React.FC<ViewsOverTimeChartWrapperProps> = ({ data, isLoading }) => {
   return (
-    <Card elevation={3} sx={{ borderRadius: '12px', p: 2 }}>
-      <CardContent>
-        <Typography variant="h6" component="h3" gutterBottom>
+    <Card
+      elevation={0} // Figspec uses explicit shadow, not MUI elevation levels
+      sx={{
+        borderRadius: '12px',
+        p: gridBase / 8 * 2, // 16px padding (paddingLeft/Right/Top/Bottom: gridBase * 2)
+        backgroundColor: cardBackgroundColor,
+        boxShadow: '0px 3px 6px rgba(0,0,0,0.1)', // from figspec effects
+      }}
+    >
+      <CardContent sx={{ p:0, '&:last-child': { pb: 0 }}}> {/* Remove CardContent's own padding */}
+        <Typography
+          variant="h6" // Suitable size, maps to ~20px
+          component="h3"
+          gutterBottom
+          sx={{
+            fontFamily: "SF Pro Text",
+            fontWeight: 'Semibold', // Figspec: Semibold
+            fontSize: 18, // Figspec: 18px
+            color: textColorPrimary,
+            mb: gridBase / 8 * 2, // Margin after title before chart container (16px)
+          }}
+        >
           Views Over Time
         </Typography>
         {isLoading ? (

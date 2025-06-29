@@ -1,0 +1,185 @@
+{
+  "name": "US003_AnalyticsDashboard",
+  "version": "1.0.0",
+  "description": "Figspec for the Resume Analytics Dashboard (US003)",
+  "lastModified": "2024-07-26T10:00:00Z",
+  "meta": {
+    "storyId": "US003",
+    "breakpoints": {
+      "xs": { "width": 360, "height": 740, "notes": "Mobile Small (e.g., iPhone SE)" },
+      "sm": { "width": 600, "height": 960, "notes": "Mobile Large / Tablet Small" },
+      "md": { "width": 1024, "height": 768, "notes": "Tablet / Small Desktop" },
+      "lg": { "width": 1280, "height": 800, "notes": "Standard Desktop" }
+    },
+    "primaryColor": "#0A84FF", // Apple-inspired blue
+    "backgroundColor": "#F9F9F9", // Light background for light mode
+    "cardBackgroundColor": "#FFFFFF",
+    "textColorPrimary": "#1D1D1F", // Near black
+    "textColorSecondary": "#6E6E73", // Gray
+    "gridBase": 8 // 8px grid
+  },
+  "rootNode": {
+    "id": "dashboard-root",
+    "type": "FRAME",
+    "name": "AnalyticsDashboardScreen",
+    "clipsContent": true,
+    "fills": [{ "type": "SOLID", "color": { "$ref": "meta.backgroundColor" } }],
+    "layoutMode": "VERTICAL",
+    "paddingTop": { "$ref": "meta.gridBase", "multiply": 3 },    // 24px
+    "paddingBottom": { "$ref": "meta.gridBase", "multiply": 3 }, // 24px
+    "paddingLeft": { "$ref": "meta.gridBase", "multiply": 2 },   // 16px
+    "paddingRight": { "$ref": "meta.gridBase", "multiply": 2 },  // 16px
+    "itemSpacing": { "$ref": "meta.gridBase", "multiply": 3 },   // 24px
+    "children": [
+      {
+        "id": "dashboard-title",
+        "type": "TEXT",
+        "name": "DashboardTitle",
+        "characters": "Analytics for \"Resume Name\"",
+        "fontName": { "family": "SF Pro Display", "style": "Bold" },
+        "fontSize": 32, // M3 Display Small equivalent
+        "fills": [{ "type": "SOLID", "color": { "$ref": "meta.textColorPrimary" } }],
+        "textAlignHorizontal": "LEFT",
+        "constraints": { "horizontal": "SCALE", "vertical": "TOP" },
+        "layoutAlign": "STRETCH",
+        "responsiveBehavior": [
+          { "breakpoint": "xs", "fontSize": 24, "textAlignHorizontal": "CENTER" }
+        ]
+      },
+      {
+        "id": "metric-cards-container",
+        "type": "FRAME",
+        "name": "MetricCardsContainer",
+        "layoutMode": "HORIZONTAL", // Changes to VERTICAL on xs
+        "primaryAxisAlignItems": "SPACE_BETWEEN",
+        "counterAxisAlignItems": "STRETCH",
+        "itemSpacing": { "$ref": "meta.gridBase", "multiply": 2 }, // 16px
+        "layoutAlign": "STRETCH",
+        "children": [
+          // Conceptual: MetricCard components would be detailed here or referenced
+          { "id": "metric-card-total-views", "type": "RECTANGLE", "name": "TotalViewsCard_Placeholder", "width": 150, "height": 100, "fills": [{ "type": "SOLID", "color": { "$ref": "meta.cardBackgroundColor" } }], "cornerRadius": 12, "effects": [{ "type": "DROP_SHADOW", "radius": 6, "offset": { "x": 0, "y": 3 }, "color": {"r":0,"g":0,"b":0,"a":0.1}}], "notes": "Placeholder for MetricCard: Total Views" },
+          { "id": "metric-card-unique-views", "type": "RECTANGLE", "name": "UniqueViewsCard_Placeholder", "width": 150, "height": 100, "fills": [{ "type": "SOLID", "color": { "$ref": "meta.cardBackgroundColor" } }], "cornerRadius": 12, "effects": [{ "type": "DROP_SHADOW", "radius": 6, "offset": { "x": 0, "y": 3 }, "color": {"r":0,"g":0,"b":0,"a":0.1}}], "notes": "Placeholder for MetricCard: Unique Views" },
+          { "id": "metric-card-downloads", "type": "RECTANGLE", "name": "DownloadsCard_Placeholder", "width": 150, "height": 100, "fills": [{ "type": "SOLID", "color": { "$ref": "meta.cardBackgroundColor" } }], "cornerRadius": 12, "effects": [{ "type": "DROP_SHADOW", "radius": 6, "offset": { "x": 0, "y": 3 }, "color": {"r":0,"g":0,"b":0,"a":0.1}}], "notes": "Placeholder for MetricCard: Downloads" },
+          { "id": "metric-card-shares", "type": "RECTANGLE", "name": "SharesCard_Placeholder", "width": 150, "height": 100, "fills": [{ "type": "SOLID", "color": { "$ref": "meta.cardBackgroundColor" } }], "cornerRadius": 12, "effects": [{ "type": "DROP_SHADOW", "radius": 6, "offset": { "x": 0, "y": 3 }, "color": {"r":0,"g":0,"b":0,"a":0.1}}], "notes": "Placeholder for MetricCard: Shares" }
+        ],
+        "responsiveBehavior": [
+          { "breakpoint": "xs", "layoutMode": "VERTICAL", "itemSpacing": { "$ref": "meta.gridBase", "multiply": 2 } }
+        ]
+      },
+      {
+        "id": "views-over-time-chart-container",
+        "type": "FRAME",
+        "name": "ViewsOverTimeChartContainer",
+        "layoutMode": "VERTICAL",
+        "layoutAlign": "STRETCH",
+        "fills": [{ "type": "SOLID", "color": { "$ref": "meta.cardBackgroundColor" } }],
+        "cornerRadius": 12,
+        "paddingTop": { "$ref": "meta.gridBase", "multiply": 2 },
+        "paddingBottom": { "$ref": "meta.gridBase", "multiply": 2 },
+        "paddingLeft": { "$ref": "meta.gridBase", "multiply": 2 },
+        "paddingRight": { "$ref": "meta.gridBase", "multiply": 2 },
+        "effects": [{ "type": "DROP_SHADOW", "radius": 6, "offset": { "x": 0, "y": 3 }, "color": {"r":0,"g":0,"b":0,"a":0.1}}],
+        "children": [
+          { "id": "views-chart-title", "type": "TEXT", "name": "ViewsChartTitle", "characters": "Views Over Time", "fontName": { "family": "SF Pro Text", "style": "Semibold" }, "fontSize": 18, "fills": [{ "type": "SOLID", "color": { "$ref": "meta.textColorPrimary" } }] },
+          { "id": "views-chart-placeholder", "type": "RECTANGLE", "name": "LineChart_Placeholder", "height": 250, "layoutAlign": "STRETCH", "fills": [{ "type": "SOLID", "color": { "r": 0.9, "g": 0.9, "b": 0.9, "a": 1 } }], "notes": "Placeholder for Line Chart" }
+        ]
+      },
+      {
+        "id": "supporting-charts-container",
+        "type": "FRAME",
+        "name": "SupportingChartsContainer",
+        "layoutMode": "HORIZONTAL", // Changes to VERTICAL on xs/sm
+        "primaryAxisAlignItems": "SPACE_BETWEEN",
+        "counterAxisAlignItems": "STRETCH",
+        "itemSpacing": { "$ref": "meta.gridBase", "multiply": 2 }, // 16px
+        "layoutAlign": "STRETCH",
+        "children": [
+          {
+            "id": "traffic-sources-chart-container",
+            "type": "FRAME",
+            "name": "TrafficSourcesChartContainer",
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "$ref": "meta.cardBackgroundColor" } }],
+            "cornerRadius": 12,
+            "paddingTop": { "$ref": "meta.gridBase", "multiply": 2 },
+            "paddingBottom": { "$ref": "meta.gridBase", "multiply": 2 },
+            "paddingLeft": { "$ref": "meta.gridBase", "multiply": 2 },
+            "paddingRight": { "$ref": "meta.gridBase", "multiply": 2 },
+            "effects": [{ "type": "DROP_SHADOW", "radius": 6, "offset": { "x": 0, "y": 3 }, "color": {"r":0,"g":0,"b":0,"a":0.1}}],
+            "layoutGrow": 1, // Flex grow
+            "children": [
+              { "id": "traffic-chart-title", "type": "TEXT", "name": "TrafficChartTitle", "characters": "Traffic Sources", "fontName": { "family": "SF Pro Text", "style": "Semibold" }, "fontSize": 18, "fills": [{ "type": "SOLID", "color": { "$ref": "meta.textColorPrimary" } }] },
+              { "id": "traffic-chart-placeholder", "type": "RECTANGLE", "name": "PieChart_Placeholder", "height": 200, "layoutAlign": "STRETCH", "fills": [{ "type": "SOLID", "color": { "r": 0.9, "g": 0.9, "b": 0.9, "a": 1 } }], "notes": "Placeholder for Pie Chart" }
+            ]
+          },
+          {
+            "id": "device-breakdown-chart-container",
+            "type": "FRAME",
+            "name": "DeviceBreakdownChartContainer",
+            "layoutMode": "VERTICAL",
+            "fills": [{ "type": "SOLID", "color": { "$ref": "meta.cardBackgroundColor" } }],
+            "cornerRadius": 12,
+            "paddingTop": { "$ref": "meta.gridBase", "multiply": 2 },
+            "paddingBottom": { "$ref": "meta.gridBase", "multiply": 2 },
+            "paddingLeft": { "$ref": "meta.gridBase", "multiply": 2 },
+            "paddingRight": { "$ref": "meta.gridBase", "multiply": 2 },
+            "effects": [{ "type": "DROP_SHADOW", "radius": 6, "offset": { "x": 0, "y": 3 }, "color": {"r":0,"g":0,"b":0,"a":0.1}}],
+            "layoutGrow": 1, // Flex grow
+            "children": [
+              { "id": "device-chart-title", "type": "TEXT", "name": "DeviceChartTitle", "characters": "Device Breakdown", "fontName": { "family": "SF Pro Text", "style": "Semibold" }, "fontSize": 18, "fills": [{ "type": "SOLID", "color": { "$ref": "meta.textColorPrimary" } }] },
+              { "id": "device-chart-placeholder", "type": "RECTANGLE", "name": "BarChart_Placeholder", "height": 200, "layoutAlign": "STRETCH", "fills": [{ "type": "SOLID", "color": { "r": 0.9, "g": 0.9, "b": 0.9, "a": 1 } }], "notes": "Placeholder for Bar Chart / List" }
+            ]
+          }
+        ],
+        "responsiveBehavior": [
+          { "breakpoint": "sm", "layoutMode": "VERTICAL", "itemSpacing": { "$ref": "meta.gridBase", "multiply": 2 } },
+          { "breakpoint": "xs", "layoutMode": "VERTICAL", "itemSpacing": { "$ref": "meta.gridBase", "multiply": 2 } }
+        ]
+      },
+      // States: Loading State
+      {
+        "id": "loading-state-overlay",
+        "type": "FRAME",
+        "name": "LoadingStateOverlay",
+        "visible": false, // Controlled by UI Builder based on loading prop
+        "fills": [{ "type": "SOLID", "color": { "r": 0, "g": 0, "b": 0, "a": 0.3 } }],
+        "layoutMode": "VERTICAL",
+        "primaryAxisAlignItems": "CENTER",
+        "counterAxisAlignItems": "CENTER",
+        "constraints": {"horizontal": "SCALE", "vertical": "SCALE"},
+        "size": {"width": "FILL", "height": "FILL"}, // Covers parent
+        "position": {"x":0, "y":0},
+        "children": [
+          // Placeholder for a spinner component
+          { "id": "spinner", "type": "RECTANGLE", "name": "Spinner_Placeholder", "width": 60, "height": 60, "cornerRadius": 30, "fills": [{ "type": "SOLID", "color": { "$ref": "meta.primaryColor" } }] },
+          { "id": "loading-text", "type": "TEXT", "name": "LoadingText", "characters": "Loading Analytics...", "fontName": { "family": "SF Pro Text", "style": "Regular" }, "fontSize": 16, "fills": [{ "type": "SOLID", "color": { "$ref": "meta.textColorPrimary" } }], "paddingTop": { "$ref": "meta.gridBase" }}
+        ],
+        "notes": "This frame should overlay the content when loading. Visibility controlled by UI-Builder."
+      },
+      // States: Empty State
+      {
+        "id": "empty-state-container",
+        "type": "FRAME",
+        "name": "EmptyStateContainer",
+        "visible": false, // Controlled by UI Builder based on data
+        "layoutMode": "VERTICAL",
+        "primaryAxisAlignItems": "CENTER",
+        "counterAxisAlignItems": "CENTER",
+        "itemSpacing": { "$ref": "meta.gridBase", "multiply": 2 },
+        "paddingTop": { "$ref": "meta.gridBase", "multiply": 5 },
+        "paddingBottom": { "$ref": "meta.gridBase", "multiply": 5 },
+        "layoutAlign": "STRETCH",
+        "children": [
+          // Placeholder for an empty state illustration
+          { "id": "empty-state-image", "type": "RECTANGLE", "name": "EmptyStateImage_Placeholder", "width": 150, "height": 150, "fills": [{ "type": "SOLID", "color": { "r": 0.85, "g": 0.85, "b": 0.85, "a": 1 } }] },
+          { "id": "empty-state-title", "type": "TEXT", "name": "EmptyStateTitle", "characters": "No analytics data yet.", "fontName": { "family": "SF Pro Text", "style": "Semibold" }, "fontSize": 20, "fills": [{ "type": "SOLID", "color": { "$ref": "meta.textColorPrimary" } }] },
+          { "id": "empty-state-message", "type": "TEXT", "name": "EmptyStateMessage", "characters": "Share your resume to start seeing insights!", "fontName": { "family": "SF Pro Text", "style": "Regular" }, "fontSize": 16, "fills": [{ "type": "SOLID", "color": { "$ref": "meta.textColorSecondary" } }], "textAlignHorizontal": "CENTER" }
+        ],
+        "notes": "This frame should be shown when there's no analytics data. Visibility controlled by UI-Builder."
+      }
+    ],
+    "responsiveBehavior": [
+      { "breakpoint": "xs", "paddingLeft": { "$ref": "meta.gridBase" }, "paddingRight": { "$ref": "meta.gridBase" } }
+    ]
+  }
+}

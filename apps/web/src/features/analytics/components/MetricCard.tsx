@@ -7,18 +7,24 @@ interface MetricCardProps {
   value: number | string;
   icon?: React.ReactNode;
   // Optional: trend?: { direction: 'up' | 'down' | 'neutral'; value: string };
-  // As per UX Spec: /designs/US003-analytics-dashboard-spec.md
 }
 
+// Figspec meta values (for reference, ideally from theme)
+const cardBackgroundColor = '#FFFFFF';
+const textColorPrimary = '#1D1D1F';
+const textColorSecondary = '#6E6E73';
+const gridBase = 8;
+
 const StyledCard = styled(Card)(({ theme }) => ({
-  minHeight: 120, // Ensure cards have a consistent minimum height
+  minHeight: 100, // Figspec placeholder was 100px height
   display: 'flex',
   flexDirection: 'column',
-  justifyContent: 'space-between',
-  padding: theme.spacing(2), // Consistent padding
-  borderRadius: '12px', // As per UX spec (Agents file 5.3)
-  elevation: 3, // As per UX spec (Agents file 5.1)
-  backgroundColor: theme.palette.background.paper, // M3 surface color
+  justifyContent: 'space-between', // Keeps title top, value bottom if card grows
+  padding: theme.spacing(gridBase / 8 * 2), // 16px, as per figspec itemSpacing/padding for internal elements
+  borderRadius: '12px', // from figspec
+  backgroundColor: cardBackgroundColor,
+  boxShadow: '0px 3px 6px rgba(0,0,0,0.1)', // from figspec effects
+  // elevation: 3, // This is MUI's elevation, figspec used specific shadow
 }));
 
 const CardHeader = styled(Box)({
@@ -31,17 +37,34 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon }) => {
   return (
     <StyledCard>
       <CardHeader>
-        <Typography variant="subtitle1" component="h3" color="text.secondary">
+        <Typography
+          variant="subtitle1" // MUI maps this to a reasonable size, like 16px
+          component="h3"
+          sx={{
+            color: textColorSecondary, // from figspec
+            fontFamily: "SF Pro Text", // from figspec (general text)
+            fontWeight: "Regular", // Assuming regular for titles unless specified
+          }}
+        >
           {title}
         </Typography>
         {icon && (
-          <Box sx={{ ml: 1, color: 'text.secondary' }}>
+          <Box sx={{ ml: 1, color: textColorSecondary }}> {/* color from figspec */}
             {icon}
           </Box>
         )}
       </CardHeader>
-      <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}> {/* Remove CardContent's default padding */}
-        <Typography variant="h4" component="p" fontWeight="medium" color="text.primary">
+      <CardContent sx={{ p: 0, pt: 1, '&:last-child': { pb: 0 } }}> {/* Ensure some space if value is large, remove CardContent's default padding */}
+        <Typography
+          variant="h4" // MUI maps this to a larger size, like 34px
+          component="p"
+          sx={{
+            color: textColorPrimary, // from figspec
+            fontFamily: "SF Pro Text", // from figspec (general text)
+            fontWeight: "Medium", // Typically values are a bit bolder
+            lineHeight: '1.2', // Adjust if h4 is too tall
+          }}
+        >
           {value}
         </Typography>
         {/*

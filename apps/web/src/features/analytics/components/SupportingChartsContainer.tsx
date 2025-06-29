@@ -10,10 +10,13 @@ interface SupportingChartsContainerProps {
 }
 
 const SupportingChartsContainer: React.FC<SupportingChartsContainerProps> = ({ data, isLoading }) => {
+  // Figspec: itemSpacing: gridBase * 2 (16px) => MUI spacing={2}
+  const gridSpacing = 2;
+
   if (isLoading) {
     // Show placeholders or a single loader for the container
     return (
-      <Grid container spacing={3}>
+      <Grid container spacing={gridSpacing}>
         <Grid item xs={12} md={6}>
           <Box display="flex" justifyContent="center" alignItems="center" height={300}
                sx={{ backgroundColor: 'grey.100', borderRadius: '12px'}}>
@@ -39,7 +42,7 @@ const SupportingChartsContainer: React.FC<SupportingChartsContainerProps> = ({ d
   }
 
   return (
-    <Grid container spacing={3}>
+    <Grid container spacing={gridSpacing}>
       <Grid item xs={12} md={6}>
         <TrafficSourcesChart data={data.topReferrers} isLoading={isLoading} />
       </Grid>

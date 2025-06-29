@@ -43,7 +43,7 @@ user_stories:
     role: User
     desire: To view a dedicated analytics dashboard for each of my resumes, showing key metrics (total/unique views, downloads, shares) and visualizations (views over time, top referrers, device breakdown)
     benefit: I can easily understand my resume's performance and reach.
-    status: implemented
+    status: needs-ui
     acceptance_criteria:
       - AC1: A clearly identifiable "Analytics" section or tab MUST be accessible to the user when viewing their own list of resumes or editing a specific resume.
       - AC2: The dashboard MUST display the following key metrics as distinct visual elements: Total Views, Unique Views, Downloads, and Shares, fetched from the API.

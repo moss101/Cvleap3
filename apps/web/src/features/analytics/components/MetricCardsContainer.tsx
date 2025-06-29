@@ -16,9 +16,13 @@ interface MetricCardsContainerProps {
 }
 
 const MetricCardsContainer: React.FC<MetricCardsContainerProps> = ({ data, isLoading }) => {
+  // Figspec: itemSpacing: gridBase * 2  (16px)
+  // MUI Grid spacing: theme.spacing(2) typically = 16px if theme.spacing(1) = 8px
+  const gridSpacing = 2;
+
   if (isLoading) {
     return (
-      <Grid container spacing={3}>
+      <Grid container spacing={gridSpacing}>
         {[...Array(4)].map((_, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
             {/* Pass a placeholder value that matches MetricCard's expected prop type for value */}
@@ -39,7 +43,7 @@ const MetricCardsContainer: React.FC<MetricCardsContainerProps> = ({ data, isLoa
   }
 
   return (
-    <Grid container spacing={3}>
+    <Grid container spacing={gridSpacing}>
       <Grid item xs={12} sm={6} md={3}>
         <MetricCard
           title="Total Views"
