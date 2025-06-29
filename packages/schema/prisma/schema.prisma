@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client" // Default output, adjust if monorepo structure needs it elsewhere
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // From PRD: postgresql://cvleap_user:secure_password@database:5432/cvleap
+                               // Actual URL will be from environment variable
+}
+
+model User {
+  id                String            @id @default(uuid())
+  email             String            @unique
+  password_hash     String?
+  first_name        String?
+  last_name         String?
+  subscription_tier String            @default("free")
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
+  resumes           Resume[]
+}
+
+model Template {
+  id            String    @id @default(uuid())
+  name          String
+  category      String?
+  is_premium    Boolean   @default(false)
+  template_data Json?     // As per PRD: template_data JSONB
+  preview_image String?
+  created_at    DateTime  @default(now())
+  resumes       Resume[]
+}
+
+model Resume {
+  id          String    @id @default(uuid())
+  user_id     String
+  template_id String?   // Made optional as per schema, but likely should have one
+  title       String?
+  content     Json?     // As per PRD: content JSONB
+  settings    Json?     // As per PRD: settings JSONB
+  is_public   Boolean   @default(false)
+  view_count  Int       @default(0) // This might be redundant if resume_analytics is the source of truth
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  template    Template? @relation(fields: [template_id], references: [id])
+  analytics   ResumeAnalytics[]
+
+  @@index([user_id])
+  @@index([template_id])
+}
+
+// From PRD Section 2.2
+// Renamed from 'resume_analytics' (SQL table name) to 'ResumeAnalytics' (Prisma model name)
+model ResumeAnalytics {
+  id          String    @id @default(uuid())
+  resume_id   String
+  event_type  String    // 'view', 'download', 'share'
+  visitor_ip  String?   // Storing anonymized or original based on policy
+  user_agent  String?
+  referrer    String?
+  created_at  DateTime  @default(now())
+  resume      Resume    @relation(fields: [resume_id], references: [id], onDelete: Cascade)
+
+  @@index([resume_id])
+  @@index([event_type])
+  @@index([created_at])
+}
+
+// AI Content Cache from PRD, for completeness if schema is being initialized
+model AiContentCache {
+  id                  String    @id @default(uuid())
+  content_hash        String    @unique
+  prompt              String?   // Prisma convention is String? for TEXT
+  generated_content   String?   // Prisma convention is String? for TEXT
+  content_type        String?
+  created_at          DateTime  @default(now())
+
+  @@map("ai_content_cache") // Explicitly map to the SQL table name
+}

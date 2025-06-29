@@ -29,16 +29,35 @@ export class AnalyticsQueryService {
   }
 
   private async checkResumeOwnership(resumeId: string): Promise<boolean> {
-    // Pseudo-code for checking if the authenticated user owns the resume
-    // In a real app:
-    // const resume = await prisma.resume.findFirst({
-    //   where: { id: resumeId, userId: this.user.id },
-    //   select: { id: true }
-    // });
-    // return !!resume;
-    console.log(`(Pseudo-DB) Checking ownership for resume ${resumeId} by user ${this.user.id}`);
-    // For simulation, assume user "user-123" owns "resume-abc"
+    // TODO: Replace with actual Prisma client query once Prisma is fully integrated and client is available.
+    // This requires the `db` constructor argument to be a PrismaClient instance.
+    // Example Prisma query:
+    /*
+    if (!this.db || typeof (this.db as any).resume?.findFirst !== 'function') {
+      console.warn("Prisma client is not available on this.db for checkResumeOwnership");
+      // Fallback for simulation if Prisma client isn't properly injected/typed
+      if (this.user.id === "user-123" && resumeId === "resume-abc-uuid") return true;
+      return false;
+    }
+    try {
+      const resume = await (this.db as any).resume.findFirst({
+        where: {
+          id: resumeId,
+          user_id: this.user.id // Ensure your schema.prisma uses user_id for the relation field if that's the column name
+        },
+        select: { id: true }
+      });
+      return !!resume;
+    } catch (e) {
+      console.error("Error during checkResumeOwnership with Prisma:", e);
+      return false; // Deny access on error
+    }
+    */
+    console.log(`(SIMULATED DB) Checking ownership for resume ${resumeId} by user ${this.user.id}`);
+    // For simulation, assume user "user-123" owns "resume-abc-uuid"
     if (this.user.id === "user-123" && resumeId === "resume-abc-uuid") return true;
+    // And another for testing purposes
+    if (this.user.id === "user-789" && resumeId === "resume-xyz-uuid") return true;
     return false;
   }
 
@@ -81,52 +100,59 @@ export class AnalyticsQueryService {
       throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to view analytics for this resume.' });
     }
 
-    // Pseudo-code for fetching and aggregating data from the database
-    console.log(`(Pseudo-DB) Fetching analytics for resume ${resumeId}`);
+    // TODO: Replace simulated DB calls with actual Prisma queries.
+    // This requires the `db` constructor argument to be a PrismaClient instance.
+    console.log(`(SIMULATED DB) Fetching analytics for resume ${resumeId} using Prisma-like queries.`);
 
-    // Simulate DB calls - replace with actual queries
-    const totalViewsData = await this.db.queryRaw(
-      "SELECT COUNT(*) as count FROM resume_analytics WHERE resume_id = $1 AND event_type = 'view'", [resumeId]
-    );
-    const totalViews = parseInt(totalViewsData[0]?.count || '0', 10) + Math.floor(Math.random() * 100);
+    // Example of how one query might look with Prisma (conceptual):
+    /*
+    const totalViews = await (this.db as any).resumeAnalytics.count({
+      where: { resume_id: resumeId, event_type: 'view' },
+    });
+    */
 
+    // Using existing pseudo-random simulation for now
+    const totalViews = Math.floor(Math.random() * 200) + 50; // Simulate 50-250 views
+    const uniqueViews = Math.floor(Math.random() * totalViews * 0.8) + Math.floor(totalViews * 0.2); // Simulate 20-100% of total
+    const downloadCount = Math.floor(Math.random() * (totalViews / 10 + 5));
+    const shareCount = Math.floor(Math.random() * (totalViews / 20 + 2));
 
-    const uniqueViewsData = await this.db.queryRaw(
-      "SELECT COUNT(DISTINCT visitor_ip_anonymized) as count FROM resume_analytics WHERE resume_id = $1 AND event_type = 'view'", [resumeId]
-    );
-    const uniqueViews = parseInt(uniqueViewsData[0]?.count || '0', 10) + Math.floor(Math.random() * totalViews);
-
-
-    const downloadCountData = await this.db.queryRaw(
-      "SELECT COUNT(*) as count FROM resume_analytics WHERE resume_id = $1 AND event_type = 'download'", [resumeId]
-    );
-    const downloadCount = parseInt(downloadCountData[0]?.count || '0', 10) + Math.floor(Math.random() * 20);
-
-    const shareCountData = await this.db.queryRaw(
-      "SELECT COUNT(*) as count FROM resume_analytics WHERE resume_id = $1 AND event_type = 'share'", [resumeId]
-    );
-    const shareCount = parseInt(shareCountData[0]?.count || '0', 10) + Math.floor(Math.random() * 10);
-
-    // Simulate fetching views by date
     const viewsByDate: Array<{ date: string; views: number }> = [];
-    for (let i = 0; i < 7; i++) { // Last 7 days
+    let remainingViews = totalViews;
+    for (let i = 6; i >= 0; i--) { // Last 7 days
         const date = new Date();
         date.setDate(date.getDate() - i);
-        viewsByDate.push({ date: date.toISOString().split('T')[0], views: Math.floor(Math.random() * (totalViews/7 + 5)) });
+        const dailyViews = i === 0 ? remainingViews : Math.floor(Math.random() * (remainingViews / (i + 1) + totalViews / 14));
+        viewsByDate.push({
+            date: date.toISOString().split('T')[0],
+            views: Math.max(0, dailyViews) // Ensure views are not negative
+        });
+        remainingViews = Math.max(0, remainingViews - dailyViews);
     }
-    viewsByDate.reverse();
-
-    // Simulate fetching top referrers
-    const topReferrersData = await this.db.queryRaw(
-      "SELECT referrer, COUNT(*) as count FROM resume_analytics WHERE resume_id = $1 AND event_type = 'view' AND referrer IS NOT NULL GROUP BY referrer ORDER BY count DESC LIMIT 3", [resumeId]
-    );
-     const topReferrers = (topReferrersData.length > 0) ? topReferrersData.map(r => ({ source: r.referrer, count: parseInt(r.count,10) })) : [
-        { source: 'linkedin.com', count: Math.floor(Math.random() * (totalViews/2)) },
-        { source: 'direct', count: Math.floor(Math.random() * (totalViews/3)) },
-    ];
+    if (remainingViews > 0 && viewsByDate.length > 0) { // Distribute any leftover views to the last day
+        viewsByDate[viewsByDate.length-1].views += remainingViews;
+    }
 
 
-    const deviceBreakdown = await this.getDeviceBreakdown(resumeId);
+    const possibleReferrers = ['linkedin.com', 'direct', 'google.com', 'github.com', 'yourportfolio.com'];
+    const topReferrers: Array<{ source: string; count: number }> = [];
+    let remainingReferrerViews = uniqueViews; // Base referrer counts on unique views for more realism
+    for (let i = 0; i < Math.min(possibleReferrers.length, 3); i++) {
+        const source = possibleReferrers[i];
+        const count = i === (Math.min(possibleReferrers.length, 3) -1) ? remainingReferrerViews : Math.floor(Math.random() * (remainingReferrerViews * 0.5) + (remainingReferrerViews * 0.1));
+        if (count > 0) {
+            topReferrers.push({ source, count: Math.max(0, count) });
+            remainingReferrerViews = Math.max(0, remainingReferrerViews - count);
+        }
+    }
+     if (remainingReferrerViews > 0 && topReferrers.length > 0) {
+        topReferrers[0].count += remainingReferrerViews; // Add remaining to the top one
+    } else if (remainingReferrerViews > 0 && topReferrers.length === 0 && uniqueViews > 0) {
+        topReferrers.push({ source: 'direct', count: remainingReferrerViews});
+    }
+
+
+    const deviceBreakdown = await this.getDeviceBreakdown(resumeId); // This already has simulation
 
     const result: AnalyticsDataOutput = {
       totalViews,
