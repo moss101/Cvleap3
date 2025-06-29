@@ -54,3 +54,15 @@ user_stories:
       - AC7: The dashboard layout MUST be responsive and provide a clear, usable experience across common device breakpoints.
       - AC8: If analytics data is still loading, an appropriate loading indicator MUST be displayed.
       - AC9: If there is no analytics data available, the dashboard MUST display a clear message indicating this.
+
+  - id: US005 # Was US004 in previous context, but your spec says US005
+    epic: Resume Performance Analytics # Corrected epic name based on convention
+    title: Persist recruiter geo events
+    as_a: Frontend Developer # Role corrected as per spec
+    i_want: geo-aggregated open/download stats
+    so_that: I can render the GeoHeatmap tile
+    acceptance_criteria:
+      - AC1: Event stored per resume_id with ISO-country + city + lat/lon (rounded).
+      - AC2: tRPC resumeAnalytics.getGeo(resumeId, range) returns [{ countryCode: 'US', opens: 57 }].
+      - AC3: Response p90 < 200 ms for 30-day range.
+    status: needs-api
