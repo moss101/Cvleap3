@@ -1,0 +1,94 @@
+epic:
+  name: AI-Powered Resume Content Augmentation and Optimization
+  description: Empower users with intelligent AI tools to streamline and enhance the resume creation process. This includes generating draft content for various resume sections, providing actionable suggestions to improve existing content for clarity and impact, and offering insights on how well a resume matches specific job descriptions. The system will integrate with advanced AI models and provide a seamless user experience for accessing these assistive features.
+  prd_references:
+    - "PRD Section 3.3: AI Assistant Integration"
+    - "PRD Section 5.3: AI Assistant Endpoints"
+    - "PRD Section 2.1: Technology Stack (OpenAI GPT-4 API)"
+    - "PRD Section 2.2: Database Schema (ai_content_cache table)"
+    - "Agents file Section 6.2: AI Assist Pipeline"
+    - "Agents file Section 2 & 14: LLM Router"
+
+user_stories:
+  - id: AI-US001
+    title: Generate Content for Resume Sections with AI
+    role: User
+    desire: The AI to generate draft content (e.g., professional summary, work experience bullet points) based on minimal input (like job title, company, key responsibilities/skills)
+    benefit: I can overcome writer's block and quickly create initial professional-sounding resume content.
+    status: needs-requirements # Default status
+    acceptance_criteria:
+      - AC1: User MUST be able to trigger AI content generation for designated resume sections.
+      - AC2: System MUST provide an interface for user to input context/keywords.
+      - AC3: Backend (`/api/ai/generate-content`) MUST receive context and construct appropriate AI prompt.
+      - AC4: AI-generated content MUST be relevant to context and section type.
+      - AC5: Generated content SHOULD be professionally worded and grammatically correct.
+      - AC6: UI MUST display AI content clearly for review, edit, and use.
+      - AC7: System SHOULD provide multiple suggestions/variations if feasible.
+      - AC8: AI interactions SHOULD have loading indicators and acceptable response times.
+      - AC9: (Backend) Prompts MUST follow "role-advice chain" strategy.
+      - AC10: (Backend) Token limits per AI call MUST be respected.
+
+  - id: AI-US002
+    title: Get AI Suggestions to Improve Existing Resume Content
+    role: User
+    desire: The AI to analyze my written resume sections and provide specific, actionable suggestions for improving clarity, impact, keywords, grammar, and overall quality
+    benefit: I can refine my resume to be more professional, concise, and ATS-friendly.
+    status: needs-requirements # Default status
+    acceptance_criteria:
+      - AC1: User MUST be able to select text for AI improvement suggestions.
+      - AC2: Backend (`/api/ai/improve-content`) MUST receive selected content and context.
+      - AC3: AI MUST analyze text for improvements (clarity, impact, keywords, grammar, tone).
+      - AC4: Suggestions MUST be specific, actionable, and clearly presented.
+      - AC5: UI MUST display suggestions non-intrusively, allowing user interaction (accept, reject, modify).
+      - AC6: If rephrasing, original and suggested text SHOULD be visible for comparison.
+      - AC7: (Backend) Prompts MUST guide AI to act as an expert.
+      - AC8: Feature SHOULD handle various lengths of text input gracefully.
+
+  - id: AI-US003
+    title: Match Resume to Job Description with AI Feedback
+    role: User
+    desire: To input a job description and have the AI compare my current resume against it, providing a match score and actionable feedback on strengths, weaknesses, and missing keywords/skills relevant to the job
+    benefit: I can tailor my resume effectively for specific job applications and increase my chances of getting an interview.
+    status: needs-requirements # Default status
+    acceptance_criteria:
+      - AC1: User MUST be able to input/paste a job description.
+      - AC2: User MUST be able to select a resume for comparison.
+      - AC3: Backend (`/api/ai/job-match-score`) MUST receive resume content and job description.
+      - AC4: AI MUST analyze both, identifying keyword matches, skill gaps, experience alignment.
+      - AC5: System MUST present a qualitative match score/rating.
+      - AC6: System MUST provide specific feedback (keywords present/missing, tailoring suggestions).
+      - AC7: Feedback MUST be clearly presented and actionable.
+      - AC8: (Backend) Analysis SHOULD simulate aspects of an ATS screening process.
+
+  - id: AI-US004
+    title: Implement Backend Services for AI Model Interaction
+    role: System (Backend Developer/Architect)
+    desire: To implement robust backend services that securely integrate with chosen AI models, manage prompt engineering, handle API request/response cycles, and expose these capabilities through secure and well-defined tRPC/API endpoints
+    benefit: Frontend applications can reliably and seamlessly request and receive AI-powered assistance for users.
+    status: needs-backend-arch # Requires backend architecture definition
+    acceptance_criteria:
+      - AC1: Backend services (e.g., `AIAssistantService`) MUST handle communication with external AI APIs.
+      - AC2: Secure management of AI service API keys MUST be implemented.
+      - AC3: Service MUST include robust error handling for AI API calls.
+      - AC4: Prompt engineering logic MUST be centralized and configurable.
+      - AC5: tRPC/API endpoints (`/api/ai/*`) MUST be implemented and route to the service.
+      - AC6: All API endpoints MUST be authenticated and authorized.
+      - AC7: System MUST support an "LLM Router" concept.
+      - AC8: Input data to AI models MUST be sanitized.
+
+  - id: AI-US005
+    title: Cache AI-Generated Content and Suggestions
+    role: System (Backend Developer/Architect)
+    desire: To implement a caching mechanism for responses from AI models, using the `ai_content_cache` table (PRD 2.2), where requests with identical or very similar sanitized prompts can retrieve cached results
+    benefit: We can reduce latency for users, manage API costs effectively, and improve overall system responsiveness for common AI assistance requests, while ensuring user data privacy is respected.
+    status: needs-backend-arch # Requires backend architecture definition
+    acceptance_criteria:
+      - AC1: Caching mechanism for AI responses MUST be implemented.
+      - AC2: `ai_content_cache` DB table MUST be used for storage.
+      - AC3: System MUST check cache before external AI calls using a content hash or similar key.
+      - AC4: Valid cached response MUST be returned if available.
+      - AC5: New AI responses MUST be stored in cache.
+      - AC6: `content_hash` MUST be generated consistently.
+      - AC7: Caching strategy MUST consider data privacy regarding PII in prompts.
+      - AC8: Cache expiration/eviction policy SHOULD be considered.
+      - AC9: Caching SHOULD significantly reduce external AI calls for common requests.
