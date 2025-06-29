@@ -49,7 +49,7 @@ user_stories:
     role: User
     desire: To input a job description and have the AI compare my current resume against it, providing a match score and actionable feedback on strengths, weaknesses, and missing keywords/skills relevant to the job
     benefit: I can tailor my resume effectively for specific job applications and increase my chances of getting an interview.
-    status: ui-components-outlined
+    status: implemented
     acceptance_criteria:
       - AC1: User MUST be able to input/paste a job description.
       - AC2: User MUST be able to select a resume for comparison.
@@ -81,7 +81,7 @@ user_stories:
     role: System (Backend Developer/Architect)
     desire: To implement a caching mechanism for responses from AI models, using the `ai_content_cache` table (PRD 2.2), where requests with identical or very similar sanitized prompts can retrieve cached results
     benefit: We can reduce latency for users, manage API costs effectively, and improve overall system responsiveness for common AI assistance requests, while ensuring user data privacy is respected.
-    status: backend-code-outlined
+    status: implemented
     acceptance_criteria:
       - AC1: Caching mechanism for AI responses MUST be implemented.
       - AC2: `ai_content_cache` DB table MUST be used for storage.
