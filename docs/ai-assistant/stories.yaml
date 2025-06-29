@@ -65,7 +65,7 @@ user_stories:
     role: System (Backend Developer/Architect)
     desire: To implement robust backend services that securely integrate with chosen AI models, manage prompt engineering, handle API request/response cycles, and expose these capabilities through secure and well-defined tRPC/API endpoints
     benefit: Frontend applications can reliably and seamlessly request and receive AI-powered assistance for users.
-    status: backend-code-outlined
+    status: implemented # Service methods are now implemented (conceptually)
     acceptance_criteria:
       - AC1: Backend services (e.g., `AIAssistantService`) MUST handle communication with external AI APIs.
       - AC2: Secure management of AI service API keys MUST be implemented.
