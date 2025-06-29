@@ -13,7 +13,7 @@ user_stories:
     role: System
     desire: To automatically and accurately record view, download, and share events for publicly accessible resumes
     benefit: Users can get insights into how their resumes are being interacted with.
-    status: backend-code-outlined
+    status: implemented
     acceptance_criteria:
       - AC1: When a public resume URL is accessed (e.g., a direct visit or embed view), a 'view' event MUST be recorded in the `resume_analytics` table. The record MUST include `resume_id`, `event_type='view'`, `visitor_ip` (or an anonymized/hashed version), `user_agent`, and `created_at` timestamp.
       - AC2: When a resume is downloaded using the platform's designated download button/feature, a 'download' event MUST be recorded in the `resume_analytics` table. The record MUST include `resume_id`, `event_type='download'`, and `created_at`.
@@ -27,7 +27,7 @@ user_stories:
     role: Backend System
     desire: To process raw analytics events and expose an API endpoint that provides aggregated statistics for a specific resume
     benefit: The frontend can display these statistics on a dashboard.
-    status: backend-code-outlined
+    status: implemented
     acceptance_criteria:
       - AC1: An API endpoint `GET /api/resumes/:id/analytics` MUST be available, as specified in PRD section 5.2.
       - AC2: The API response for a valid `resume_id` MUST be a JSON object containing `totalViews` (integer), `uniqueViews` (integer), `downloadCount` (integer), `shareCount` (integer).
@@ -43,7 +43,7 @@ user_stories:
     role: User
     desire: To view a dedicated analytics dashboard for each of my resumes, showing key metrics (total/unique views, downloads, shares) and visualizations (views over time, top referrers, device breakdown)
     benefit: I can easily understand my resume's performance and reach.
-    status: ui-components-outlined
+    status: implemented
     acceptance_criteria:
       - AC1: A clearly identifiable "Analytics" section or tab MUST be accessible to the user when viewing their own list of resumes or editing a specific resume.
       - AC2: The dashboard MUST display the following key metrics as distinct visual elements: Total Views, Unique Views, Downloads, and Shares, fetched from the API.
